@@ -26,16 +26,15 @@ function [ X ] = get_feats(eeg, fs, learn_start, learn_end,base_start,base_end,n
     if (need_preprocess)
         eeg = preprocess(eeg, fs,base_start,base_end);
     end
-    desired_feature_num = 15; 
+    desired_feature_num = 40; 
     full_window = learn_end - learn_start;
     % feat_num = number_of_steps;
     % filter_step = (window_size - filter_width)/num_of_steps
     % filter_step = 0.5*filter_width
-    
-    filter_width = 2*full_window/(desired_feature_num + 2);
-    filter_step = 0.5 * filter_width; 
-%     filter_width = roundn(full_window/desired_feature_num,-2); 
-%     filter_step = 0.5 * filter_width;
+       
+    filter_width = full_window/(0.5*desired_feature_num + 1);
+    filter_step = 0.5 * filter_width;
+
     
     % features
     
@@ -59,6 +58,8 @@ function [ X ] = get_feats(eeg, fs, learn_start, learn_end,base_start,base_end,n
 
 
 end
+
+
 function [eeg] = preprocess(eeg, fs,base_start,base_end)
 % baseline correction
 base_end_time = base_end;

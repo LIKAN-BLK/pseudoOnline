@@ -1,16 +1,15 @@
-function [ eegT, eegNT, auc] = loaddata(datapath)
+function [ eegTRP1,eegTRP2, eegNT] = loaddata(datapath,fs,window_size)
 %loaddata Cut epochs frow semi-raw data
 if isempty(datapath)
     datapath = '../exp3/data/';
 end
-fs = 200;
 mask = load([datapath 'relmaska.mat']);
 mask = mask.relmaska;
 data = load([datapath 'rawdata.mat']);
 data = (data.eegdata)';
 [~,grad] = gradient(data);
 % [irrelevant_mask] = search_irrelevant_data(mask,data);
-window_size = 400 * fs / 1000; %
+
 starts = find(mask == 12);
 ends = find(mask == 13);
 starts = starts(1:size(ends,2));
@@ -38,15 +37,15 @@ for i =1:size(ends,2)
 end
 
 
-eegT = rp2_epochs(:,:,1:100);
+eegTRP2 = rp2_epochs(:,:,1:100);
+eegTRP1 = rp1_epochs(:,:,1:100);
 nt1 = nontarget_epochs1(:,:,randperm(length(nontarget_epochs1)));
-nt1 = nt1(:,:,1:100);
+
 
 nt2 = nontarget_epochs2(:,:,randperm(length(nontarget_epochs2)));
-nt2 = nt2(:,:,1:100);
-eegNT= cat(3,nt1,nt2,rp1_epochs(:,:,100));
+eegNT = cat(3,nt1,nt2,rp1_epochs(:,:,100));
 
-[params, spec, sens, acc, auc] = test_loading_alg(rp1_epochs, rp2_epochs,fs);
+[params, spec, sens, acc, auc] = test_loading_alg(rp1_epochs(:,:,1:150),cat(3,nt1(:,:,1:150),nt2(:,:,1:150),rp2_epochs(:,:,1:150)),window_size);
 
 end
 
@@ -67,10 +66,12 @@ function [nontarget_epochs1,nontarget_epochs2,rp1_epochs,rp2_epoch] = process_in
         baseline_corrected = rp2_epoch - repmat(baseline,size(rp2_epoch,1),1);
         if ~is_relevant(rp2_epoch,grad,baseline_corrected)
             rp2_epoch = [];
+        else
+            rp2_epoch = baseline_corrected;
         end
         
         start_rp1_data = movement - 2000 * fs /1000;
-        end_rp1_data = movement - 500 * fs /1000;
+        end_rp1_data = movement - 800 * fs /1000;
         rp1_epochs = cat(3,rp1_epochs,make_epochs(interval_data(start_rp1_data-w_size+1:end_rp1_data,:), ... %additional window for baseline
             grad(start_rp1_data:end_rp1_data,:),w_size));
         
@@ -113,7 +114,7 @@ function [epochs] = make_epochs(data,grad,w_size)
         bcorrected_epoch = tmp_epoch - repmat(baseline,size(tmp_epoch,1),1);
         if ~isempty(tmp_epoch)
             if is_relevant(tmp_epoch,grad(i-2*w_size+1:i-w_size,:),bcorrected_epoch)
-                epochs = cat(3,epochs,tmp_epoch); 
+                epochs = cat(3,epochs,bcorrected_epoch); 
             end
         end
     end
@@ -130,9 +131,9 @@ function [is_relevant] = is_relevant(data,grad,baseline_corrected)
 end
 
 
-function [params, spec, sens, acc, auc] = test_loading_alg(eegT, eegNT,fs)
-    X1 = get_feats(eegT, fs, 0, 0.4, nan,nan,false);
-    X0 = get_feats(eegNT, fs, 0, 0.4, nan,nan,false);
+function [params, spec, sens, acc, auc] = test_loading_alg(eegT, eegNT,w_size)
+    X1 = get_feats(eegT, 200, 0, 0.4, nan,nan,false);
+    X0 = get_feats(eegNT, 200, 0, 0.4, nan,nan,false);
     [params, spec, sens, acc, auc] = train(X1,X0);
 end
 

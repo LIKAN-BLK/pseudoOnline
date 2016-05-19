@@ -1,10 +1,6 @@
-function [ W,mu,sigma,opt_thr ] = learn( data_path,learn_start,learn_end,base_start,base_end)
+function [ W,mu,sigma,opt_thr ] = learn( eegT, eegNT,w_size)
 %get_classifier_mat Returns classifier matrix
-%     eegT = load([data_path 'RelRPExp.mat']);
-%     eegNT = load([data_path 'IrrelRPExp.mat']);
-%     eegT = eegT.RelData;
-%     eegNT = eegNT.IrrelData;
-    [ eegT, eegNT ] = loaddata(data_path);
+
     tmp = reshape(cat(3,eegNT,eegT),size(eegNT,1),size(eegNT,2)*(size(eegNT,3)+size(eegT,3)));
     mu = mean(tmp,2);
     sigma = std(tmp,0,2);
@@ -16,8 +12,8 @@ function [ W,mu,sigma,opt_thr ] = learn( data_path,learn_start,learn_end,base_st
     
     
     fs = 500;
-    [X1] = get_feats(eegT, fs, learn_start, learn_end,base_start,base_end,false);
-    [X0] = get_feats(eegNT, fs, learn_start, learn_end,base_start,base_end,false);
+    [X1] = get_feats(eegT, w_size);
+    [X0] = get_feats(eegNT, w_size);
     
     N0 = size(X0, 1);
     N1 = size(X1, 1);

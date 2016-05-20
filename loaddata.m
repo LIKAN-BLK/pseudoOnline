@@ -40,13 +40,13 @@ end
 
 eegT = rp2_epochs(:,:,1:100);
 nt1 = nontarget_epochs1(:,:,randperm(length(nontarget_epochs1)));
-nt1 = nt1(:,:,1:100);
+nt1 = nt1(:,:,1:250);
 
 nt2 = nontarget_epochs2(:,:,randperm(length(nontarget_epochs2)));
-nt2 = nt2(:,:,1:100);
+nt2 = nt2(:,:,1:250);
 eegNT= cat(3,nt1,nt2,rp1_epochs(:,:,100));
 
-[params, spec, sens, acc, auc] = test_loading_alg(rp1_epochs, rp2_epochs,fs);
+[params, spec, sens, acc, auc] = test_loading_alg(rp1_epochs(:,:,1:250),cat(3,nt1,nt2,rp2_epochs),fs);
 
 end
 
@@ -67,10 +67,12 @@ function [nontarget_epochs1,nontarget_epochs2,rp1_epochs,rp2_epoch] = process_in
         baseline_corrected = rp2_epoch - repmat(baseline,size(rp2_epoch,1),1);
         if ~is_relevant(rp2_epoch,grad,baseline_corrected)
             rp2_epoch = [];
+        else
+            rp2_epoch = baseline_corrected;
         end
         
         start_rp1_data = movement - 2000 * fs /1000;
-        end_rp1_data = movement - 500 * fs /1000;
+        end_rp1_data = movement - 800 * fs /1000;
         rp1_epochs = cat(3,rp1_epochs,make_epochs(interval_data(start_rp1_data-w_size+1:end_rp1_data,:), ... %additional window for baseline
             grad(start_rp1_data:end_rp1_data,:),w_size));
         
@@ -113,7 +115,7 @@ function [epochs] = make_epochs(data,grad,w_size)
         bcorrected_epoch = tmp_epoch - repmat(baseline,size(tmp_epoch,1),1);
         if ~isempty(tmp_epoch)
             if is_relevant(tmp_epoch,grad(i-2*w_size+1:i-w_size,:),bcorrected_epoch)
-                epochs = cat(3,epochs,tmp_epoch); 
+                epochs = cat(3,epochs,bcorrected_epoch); 
             end
         end
     end
@@ -159,8 +161,17 @@ for i = 1:CV.NumTestSets
     Ytr = Y(trIdx, :);
     Ytst = Y(tstIdx, :);
             
-    Xtr = X(trIdx, :);
-    Xtst = X(tstIdx, :);  
+    Xtr = X(trIdx, :);  
+    Xtst = X(tstIdx, :);
+    
+    [prin_comp,Xtr] = princomp(Xtr);
+    Xtr = Xtr(:,1:150);
+    Xtst = Xtst*prin_comp(:,1:150);
+
+%     [Xtr, transform_matrix] = compute_mapping(Xtr, 'LPP', 80);
+%     Xtst = Xtst*transform_matrix.M;
+    
+    
     %chosing R2 relevant feats
 %     ind_of_correl_feats = find_meaningful_feats(Xtr,Ytr,50);
 %     Xtr = Xtr(:,ind_of_correl_feats);
@@ -180,17 +191,7 @@ for i = 1:CV.NumTestSets
     Q = Xtr*W(:,:,i);    
     Q0 = Q(Ytr == 1);
     Q1 = Q(Ytr == 2);
-%     
-%     ths = Q + eps;
-%     ths = sort(ths);
-%     for k = 1:length(ths)                
-%         sens_tr(k) = length(find(Q1 <= ths(k))) / N1tr;
-%         spec_tr(k) = length(find(Q0 > ths(k))) / N0tr;    
-%     end;
-%     idx = find(spec_tr >= 0.99, 1, 'last');
-%     th_opt(i) = ths(idx); 
-%     sens_tr(i) = sens_tr(idx);
-%     spec_tr(i) = spec_tr(idx);    
+  
     [aucXtr,aucYtr, ~, auc_tr(i)] = perfcurve([ones(N1tr,1); zeros(N0tr,1)], [Q1; Q0], 0);
     [aucXtr, index]=unique(aucXtr);
     meanAucYtr = meanAucYtr + interp1(aucXtr,aucYtr(index),meanAucX);

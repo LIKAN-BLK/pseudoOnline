@@ -3,7 +3,7 @@ function [ X ] = get_feats(eeg, fs, learn_start, learn_end,base_start,base_end,n
     if (need_preprocess)
         eeg = preprocess(eeg, fs,base_start,base_end);
     end
-    desired_feature_num = 15; 
+    desired_feature_num = 10; 
     full_window = learn_end - learn_start;
     filter_width = roundn(full_window/desired_feature_num,-2); 
     filter_step = 0.5 * filter_width;

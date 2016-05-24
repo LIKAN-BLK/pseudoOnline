@@ -40,13 +40,13 @@ end
 
 eegT = rp2_epochs(:,:,1:100);
 nt1 = nontarget_epochs1(:,:,randperm(length(nontarget_epochs1)));
-nt1 = nt1(:,:,1:250);
+nt1 = nt1(:,:,1:500);
 
 nt2 = nontarget_epochs2(:,:,randperm(length(nontarget_epochs2)));
-nt2 = nt2(:,:,1:250);
+nt2 = nt2(:,:,1:500);
 eegNT= cat(3,nt1,nt2,rp1_epochs(:,:,100));
 
-[params, spec, sens, acc, auc] = test_loading_alg(rp1_epochs(:,:,1:250),cat(3,nt1,nt2,rp2_epochs),fs);
+[params, spec, sens, acc, auc] = test_loading_alg(cat(3,rp1_epochs(:,:,1:250),rp2_epochs),cat(3,nt1,nt2),fs);
 
 end
 

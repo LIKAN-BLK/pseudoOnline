@@ -62,6 +62,35 @@ for i=1:size(ends,2)
    
 end
 
+output1 = [];
+for i=1:size(classifierOutput1,2)
+    if (size(classifierOutput1{i},2)==322)
+        output1 = [output1;classifierOutput1{i}];
+    end
+end
+
+output2 = [];
+for i=1:size(classifierOutput2,2)
+    if (size(classifierOutput2{i},2)==322)
+        output2 = [output2;classifierOutput2{i}];
+    end
+end
+time =(1:size(output1,2))/200 - size(output1,2)/200;
+plot(time,mean(output1,1))
+plot(time,mean(output1,1))
+
+cumm1=zeros(size(output1));
+for i=1:5:size(output1,2)-5
+    cumm1(:,i:i+5-1)=repmat(sum(output1(:,i:i+5-1),2),1,5);
+end
+surf(time,1:size(cumm1,1),cumm1);
+
+
+surf(time,1:size(output1,1),output1);
+contour3(time,1:size(output1,1),output1)
+
+
+
 end
 
 function [classifierOutput1,classifierOutput2,epochs] = process_interval(data,rp_mask,grad,w_size,w_step,prin_comp1,prin_comp2,classifier1,classifier2)
@@ -82,11 +111,11 @@ function [classifierOutput1,classifierOutput2,epochs] = process_interval(data,rp
             epoch.rp = all(rp_mask(epoch_start:epoch_end));
             if(epoch.rp)
                 if (is_relevant(epoch.data,grad(epoch_start:epoch_end,:)))
-                    classifierOutput1(epoch_start:epoch_end) = (X *prin_comp1)* classifier1;
-                    classifierOutput2(epoch_start:epoch_end) = (X * prin_comp2) * classifier2;
+                    classifierOutput1(epoch_end:epoch_end+w_step-1) = (X *prin_comp1)* classifier1;
+                    classifierOutput2(epoch_end:epoch_end + w_step-1) = (X * prin_comp2) * classifier2;
                 else
-                    classifierOutput1(epoch_start:epoch_end) = nan;
-                    classifierOutput2(epoch_start:epoch_end) = nan;
+                    classifierOutput1(epoch_end:epoch_end+w_step-1) = nan;
+                    classifierOutput2(epoch_end:epoch_end+w_step-1) = nan;
                 end    
             end
             

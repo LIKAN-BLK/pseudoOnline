@@ -13,7 +13,7 @@ function [prin_comp,classifier,opt_thr ] = learn( eegT, eegNT,w_size)
     N1 = size(X1, 1);
     
     num_of_pca = 150;
-    [prin_comp,X] = princomp([X0;X1]);
+    [prin_comp,X] = princomp([X0;X1],num_of_pca);
     X = X(:,1:num_of_pca);
     prin_comp = prin_comp(:,1:num_of_pca);
     obj = train_shrinkage(X,[ones(N0,1);2*ones(N1,1)]);

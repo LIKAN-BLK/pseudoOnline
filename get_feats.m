@@ -1,36 +1,11 @@
-% function [ X ] = get_feats(eeg, w_size)
-% %Get ampl features
-%     desired_feature_num = 15; 
-%     
-%     filter_width = round(w_size/desired_feature_num); 
-%     filter_step = round(0.5 * filter_width);
-%     
-%     % features
-%     
-%     ind_beg = [1:filter_step:w_size-filter_width];
-%     ind_end = ind_beg + filter_width;
-%     
-%     
-%     N = size(eeg, 3);
-%     X = [];
-%     for i = 1:N
-%         x = [];
-%         for t = 1:length(ind_beg)    
-%             x = [x; mean(eeg(ind_beg(t):ind_end(t), :, i), 1)];
-%         end
-%         X(i, :) = x(:);
-%     end
-% end
-function [ X ] = get_feats(eeg, fs, learn_start, learn_end,base_start,base_end,need_preprocess)
-%Get ampl features
-    if (need_preprocess)
-        eeg = preprocess(eeg, fs,base_start,base_end);
-    end
-    desired_feature_num = 40; 
+function [ X ] = get_feats(eeg, fs, learn_start, learn_end)
+%Get ampl features, learn_start, learn_end in ms
+    learn_start = learn_start/1000;
+    learn_end = learn_end/1000;
+
+    desired_feature_num = 19; 
     full_window = learn_end - learn_start;
-    % feat_num = number_of_steps;
-    % filter_step = (window_size - filter_width)/num_of_steps
-    % filter_step = 0.5*filter_width
+
        
     filter_width = full_window/(0.5*desired_feature_num + 1);
     filter_step = 0.5 * filter_width;
@@ -58,15 +33,3 @@ function [ X ] = get_feats(eeg, fs, learn_start, learn_end,base_start,base_end,n
 
 
 end
-
-
-function [eeg] = preprocess(eeg, fs,base_start,base_end)
-% baseline correction
-base_end_time = base_end;
-base_start_time = base_start;
-base_end = (base_end_time) * fs;
-base_start = (base_start_time) * fs+1;
-eeg = eeg - repmat(mean(eeg(base_start:base_end,:,:),1), [size(eeg,1), 1, 1]);
-end
-
-

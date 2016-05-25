@@ -3,6 +3,7 @@ function [ eegTRP1,eegTRP2, eegNT] = loaddata(datapath,fs,window_size)
 if isempty(datapath)
     datapath = '../exp3/data/';
 end
+
 mask = load([datapath 'relmaska.mat']);
 mask = mask.relmaska;
 data = load([datapath 'rawdata.mat']);
@@ -37,28 +38,15 @@ for i =1:size(ends,2)
 end
 
 
-eegTRP2 = rp2_epochs(:,:,1:100);
-eegTRP1 = rp1_epochs(:,:,1:100);
+eegTRP2 = rp2_epochs;
 
+eegTRP1 = rp1_epochs;
 
-% nt1 = nontarget_epochs1(:,:,randperm(size(nontarget_epochs1,3)));
-% nt2 = nontarget_epochs2(:,:,randperm(size(nontarget_epochs2,3)));
-% rp1 = rp1_epochs(:,:,randperm(size(rp1_epochs,3)));
-% rp2 = rp2_epochs(:,:,randperm(size(rp2_epochs,3)));
+nt1 = nontarget_epochs1(:,:,randperm(length(nontarget_epochs1)));
+nt2 = nontarget_epochs2(:,:,randperm(length(nontarget_epochs2)));
+eegNT= cat(3,nt1,nt2);
 
-nt1 = nontarget_epochs1;
-nt2 = nontarget_epochs2;
-rp1 = rp1_epochs;
-rp2 = rp2_epochs;
-
-eegNT = cat(3,nt1,nt2);
-
-
-
-for num_of_pca = 40:10:160
-    [params, spec, sens, acc, auc] = test_loading_alg(rp1(:,:,1:600),cat(3,nt1(:,:,1:1000),nt2(:,:,1:600)),window_size,num_of_pca);
-    sprintf('pca=%d,auc.tr=%0.2f,mean(auc.tst)=%0.2f,std(auc.tst)=%0.2f\n',num_of_pca,auc.tr.square(1),auc.tst.square(1),auc.tst.square(2))
-end
+% [params, spec, sens, acc, auc] = test_loading_alg(cat(3,rp1_epochs(:,:,1:250),rp2_epochs),cat(3,nt1,nt2),fs);
 
 end
 
@@ -79,8 +67,8 @@ function [nontarget_epochs1,nontarget_epochs2,rp1_epochs,rp2_epoch] = process_in
         baseline_corrected = rp2_epoch - repmat(baseline,size(rp2_epoch,1),1);
         if ~is_relevant(rp2_epoch,grad,baseline_corrected)
             rp2_epoch = [];
-%         else
-%             rp2_epoch = baseline_corrected;
+        else
+            rp2_epoch = baseline_corrected;
         end
         
         start_rp1_data = movement - 2000 * fs /1000;
@@ -127,7 +115,7 @@ function [epochs] = make_epochs(data,grad,w_size)
         bcorrected_epoch = tmp_epoch - repmat(baseline,size(tmp_epoch,1),1);
         if ~isempty(tmp_epoch)
             if is_relevant(tmp_epoch,grad(i-2*w_size+1:i-w_size,:),bcorrected_epoch)
-                epochs = cat(3,epochs,tmp_epoch); 
+                epochs = cat(3,epochs,bcorrected_epoch); 
             end
         end
     end
@@ -144,18 +132,17 @@ function [is_relevant] = is_relevant(data,grad,baseline_corrected)
 end
 
 
-function [params, spec, sens, acc, auc] = test_loading_alg(eegT, eegNT,w_size,num_of_pca)
-    X1 = get_feats(eegT, 200, 0, 0.2, nan,nan,false);
-    X0 = get_feats(eegNT, 200, 0, 0.2, nan,nan,false);
-    [params, spec, sens, acc, auc] = train(X1,X0,num_of_pca);
+function [params, spec, sens, acc, auc] = test_loading_alg(eegT, eegNT,fs)
+    X1 = get_feats(eegT, fs, 0, 0.4);
+    X0 = get_feats(eegNT, fs, 0, 0.4);
+    [params, spec, sens, acc, auc] = train(X1,X0);
 end
 
-function [params, spec, sens, acc, auc] = train(X1,X0,num_of_pca)
+function [params, spec, sens, acc, auc] = train(X1,X0)
 %
 % X0: [Nsamples0 * Nfeats]
 % X1: [Nsamples1 * Nfeats]
 %
-
 
 N0 = size(X0, 1);
 N1 = size(X1, 1);
@@ -174,12 +161,17 @@ for i = 1:CV.NumTestSets
     Ytr = Y(trIdx, :);
     Ytst = Y(tstIdx, :);
             
-    Xtr = X(trIdx, :);
-    [prin_comp,Xtr] = princomp(Xtr);
-    Xtr = Xtr(:,1:num_of_pca);
-    
+    Xtr = X(trIdx, :);  
     Xtst = X(tstIdx, :);
-    Xtst = Xtst*prin_comp(:,1:num_of_pca);
+    
+    [prin_comp,Xtr] = princomp(Xtr);
+    Xtr = Xtr(:,1:150);
+    Xtst = Xtst*prin_comp(:,1:150);
+
+%     [Xtr, transform_matrix] = compute_mapping(Xtr, 'LPP', 80);
+%     Xtst = Xtst*transform_matrix.M;
+    
+    
     %chosing R2 relevant feats
 %     ind_of_correl_feats = find_meaningful_feats(Xtr,Ytr,50);
 %     Xtr = Xtr(:,ind_of_correl_feats);
@@ -199,8 +191,7 @@ for i = 1:CV.NumTestSets
     Q = Xtr*W(:,:,i);    
     Q0 = Q(Ytr == 1);
     Q1 = Q(Ytr == 2);
-
-    
+  
     [aucXtr,aucYtr, ~, auc_tr(i)] = perfcurve([ones(N1tr,1); zeros(N0tr,1)], [Q1; Q0], 0);
     [aucXtr, index]=unique(aucXtr);
     meanAucYtr = meanAucYtr + interp1(aucXtr,aucYtr(index),meanAucX);
@@ -209,8 +200,9 @@ for i = 1:CV.NumTestSets
     Q = Xtst*W(:,:,i);
     Q0 = Q(Ytst == 1);
     Q1 = Q(Ytst == 2);
-
-    
+%     sens_tst(i) = length(find(Q1 <= th_opt(i))) / N1tst;
+%     spec_tst(i) = length(find(Q0 > th_opt(i))) / N0tst;    
+%     acc_tst(i) = (sens_tst(i) * N1tst + spec_tst(i) * N0tst) / (N1tst + N0tst);
     [aucXtst,aucYtst, ~, auc_tst(i)] = perfcurve([ones(N1tst,1); zeros(N0tst,1)], [Q1; Q0], 0);
     [aucXtst, index]=unique(aucXtst);
     meanAucYtst = meanAucYtst + interp1(aucXtst,aucYtst(index),meanAucX);

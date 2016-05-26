@@ -20,6 +20,11 @@ rp_len = 2000 * fs /1000;
 
 starts = find(mask == 12);
 ends = find(mask == 13);
+hist1 = zeros(1,2*round(ends(1) - starts(1)));
+hist2 = zeros(1,2*round(ends(1) - starts(1)));
+hist_mv_ind = round(size(hist1,2)/2);
+threshold1= 0;
+threshold2= 0;
 
 w_step = 10 * fs/1000; %10ms
 
@@ -42,54 +47,23 @@ for i=1:size(ends,2)
        
        
    [clfOut1,clfOut2,intervals{i}] = process_interval(interval,rp_mask,grad(starts(i):ends(i),:),w_size,w_step,prin_comp1,prin_comp2,classifier1,classifier2);
-   tmp_start = find(~isnan(clfOut1));
-   if(~isempty(tmp_start))
-    tmp_end = tmp_start(end);
-    tmp_start = tmp_start(1);
-    if(all(~isnan(clfOut1(tmp_start:tmp_end))))
-        classifierOutput1{i} = clfOut1(tmp_start:tmp_end);
-    end
+   clf_mv_ind = find(rp_mask == 2);
+   
+   if(~isempty(clf_mv_ind))
+       clf_mv_ind=clf_mv_ind(end);
+       activation_index1 = find(clfOut1 < threshold1,1);
+       distance_mv1 = clf_mv_ind - activation_index1;
+
+       activation_index2 = find(clfOut2 < threshold2,1);
+       distance_mv2 = clf_mv_ind - activation_index2;
+       hist1(hist_mv_ind - distance_mv1) = hist1(hist_mv_ind - distance_mv1) + 1;
+       hist2(hist_mv_ind - distance_mv2) = hist2(hist_mv_ind - distance_mv2) + 1;
+       
    end
    
-   if(~isempty(tmp_start))
-    tmp_start = find(~isnan(clfOut2));
-    tmp_end = tmp_start(end);
-    tmp_start = tmp_start(1);
-    if(all(~isnan(clfOut2(tmp_start:tmp_end))))
-        classifierOutput2{i} = clfOut2(tmp_start:tmp_end);
-    end
-   end
+
    
 end
-
-output1 = [];
-for i=1:size(classifierOutput1,2)
-    if (size(classifierOutput1{i},2)==322)
-        output1 = [output1;classifierOutput1{i}];
-    end
-end
-
-output2 = [];
-for i=1:size(classifierOutput2,2)
-    if (size(classifierOutput2{i},2)==322)
-        output2 = [output2;classifierOutput2{i}];
-    end
-end
-time =(1:size(output1,2))/200 - size(output1,2)/200;
-plot(time,mean(output1,1))
-plot(time,mean(output1,1))
-
-cumm1=zeros(size(output1));
-for i=1:5:size(output1,2)-5
-    cumm1(:,i:i+5-1)=repmat(sum(output1(:,i:i+5-1),2),1,5);
-end
-surf(time,1:size(cumm1,1),cumm1);
-
-
-surf(time,1:size(output1,1),output1);
-contour3(time,1:size(output1,1),output1)
-
-
 
 end
 
@@ -109,17 +83,21 @@ function [classifierOutput1,classifierOutput2,epochs] = process_interval(data,rp
 
             [X] = get_feats(epoch.data,200, 0, 400);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms      
             epoch.rp = all(rp_mask(epoch_start:epoch_end));
-            if(epoch.rp)
-                if (is_relevant(epoch.data,grad(epoch_start:epoch_end,:)))
-                    classifierOutput1(epoch_end:epoch_end+w_step-1) = (X *prin_comp1)* classifier1;
-                    classifierOutput2(epoch_end:epoch_end + w_step-1) = (X * prin_comp2) * classifier2;
-                else
-                    classifierOutput1(epoch_end:epoch_end+w_step-1) = nan;
-                    classifierOutput2(epoch_end:epoch_end+w_step-1) = nan;
-                end    
+            
+            
+            
+            if (is_relevant(epoch.data,grad(epoch_start:epoch_end,:)))
+                classifierOutput1(epoch_end:epoch_end+w_step-1) = (X *prin_comp1)* classifier1;
+                classifierOutput2(epoch_end:epoch_end + w_step-1) = (X * prin_comp2) * classifier2;
+            else
+                classifierOutput1(epoch_end:epoch_end+w_step-1) = nan;
+                classifierOutput2(epoch_end:epoch_end+w_step-1) = nan;
             end
             
-            if(is_relevant(epoch.data,grad(epoch_start:epoch_end,:)))    
+            
+            
+            
+            if(is_relevant(epoch.data,grad(epoch_start:epoch_end,:)))
                 epoch.Q1 = (X *prin_comp1)* classifier1;
                 epoch.Q2 = (X * prin_comp2) * classifier2;
             else

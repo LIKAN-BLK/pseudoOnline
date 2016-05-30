@@ -20,11 +20,12 @@ rp_len = 2000 * fs /1000;
 
 starts = find(mask == 12);
 ends = find(mask == 13);
-hist1 = zeros(1,2*round(ends(1) - starts(1)));
-hist2 = zeros(1,2*round(ends(1) - starts(1)));
+
+threshold1= 0:-1:-5;
+threshold2= 0:-1:-5;
+hist1 = zeros(length(threshold1),2*round(ends(1) - starts(1))); %because rp could be at the beginning of interval and could be at the end of interval
+hist2 = zeros(length(threshold2),2*round(ends(1) - starts(1)));
 hist_mv_ind = round(size(hist1,2)/2);
-threshold1= 0;
-threshold2= 0;
 
 w_step = 10 * fs/1000; %10ms
 
@@ -47,24 +48,36 @@ for i=1:size(ends,2)
        
        
    [clfOut1,clfOut2,intervals{i}] = process_interval(interval,rp_mask,grad(starts(i):ends(i),:),w_size,w_step,prin_comp1,prin_comp2,classifier1,classifier2);
-   clf_mv_ind = find(rp_mask == 2);
-   
-   if(~isempty(clf_mv_ind))
-       clf_mv_ind=clf_mv_ind(end);
-       activation_index1 = find(clfOut1 < threshold1,1);
-       distance_mv1 = clf_mv_ind - activation_index1;
-
-       activation_index2 = find(clfOut2 < threshold2,1);
-       distance_mv2 = clf_mv_ind - activation_index2;
-       hist1(hist_mv_ind - distance_mv1) = hist1(hist_mv_ind - distance_mv1) + 1;
-       hist2(hist_mv_ind - distance_mv2) = hist2(hist_mv_ind - distance_mv2) + 1;
-       
-   end
-   
-
-   
+    
+%    clf_mv_ind = find(rp_mask == 2);
+%    
+%    if(~isempty(clf_mv_ind))
+%        clf_mv_ind=clf_mv_ind(end);
+%        for thres_ind=1:length(threshold1)
+%             activation_index1 = find(clfOut1 < threshold1(thres_ind),1);
+%             distance_mv1 = clf_mv_ind - activation_index1;
+% 
+%             activation_index2 = find(clfOut2 < threshold2(thres_ind),1);
+%             distance_mv2 = clf_mv_ind - activation_index2;
+%             hist1(thres_ind, hist_mv_ind - distance_mv1) = hist1(thres_ind, hist_mv_ind - distance_mv1) + 1;
+%             hist2(thres_ind, hist_mv_ind - distance_mv2) = hist2(thres_ind, hist_mv_ind - distance_mv2) + 1;
+%        end
+%    end
 end
-
+% time = (1:size(hist1,2))/fs;
+% time = time - time(length(time))/2;
+% plot(time,hist1(1,:));
+Q=[];
+Labels = [];
+for i = 1:length(intervals)
+    for epoch=intervals{i}
+        if ~isnan(epoch.Q1)
+            Q = [Q,epoch.Q1];
+            Labels = [Labels,epoch.rp];
+        end
+    end
+end
+[~,~,~,auc,~,~,~] = perfcurve(Labels,Q,1);
 end
 
 function [classifierOutput1,classifierOutput2,epochs] = process_interval(data,rp_mask,grad,w_size,w_step,prin_comp1,prin_comp2,classifier1,classifier2)
@@ -80,11 +93,8 @@ function [classifierOutput1,classifierOutput2,epochs] = process_interval(data,rp
             epoch_end = i+baseline_size+w_size-1;
             epoch.data = data(epoch_start:epoch_end,:)-repmat(mean(base_line,1),w_size,1);
 
-
             [X] = get_feats(epoch.data,200, 0, 400);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms      
-            epoch.rp = all(rp_mask(epoch_start:epoch_end));
-            
-            
+            epoch.rp = all(rp_mask(epoch_start:epoch_end));           
             
             if (is_relevant(epoch.data,grad(epoch_start:epoch_end,:)))
                 classifierOutput1(epoch_end:epoch_end+w_step-1) = (X *prin_comp1)* classifier1;
@@ -92,24 +102,23 @@ function [classifierOutput1,classifierOutput2,epochs] = process_interval(data,rp
             else
                 classifierOutput1(epoch_end:epoch_end+w_step-1) = nan;
                 classifierOutput2(epoch_end:epoch_end+w_step-1) = nan;
-            end
-            
-            
+            end      
             
             
             if(is_relevant(epoch.data,grad(epoch_start:epoch_end,:)))
-                epoch.Q1 = (X *prin_comp1)* classifier1;
+                epoch.Q1 = (X * prin_comp1)* classifier1;
                 epoch.Q2 = (X * prin_comp2) * classifier2;
             else
                 epoch.Q1 = nan;
                 epoch.Q2 = nan;
             end
             epoch.is_relevant = is_relevant(epoch.data,grad(epoch_start:epoch_end,:));
-            if(epoch.rp)
-               epochs = [epochs,epoch];
-            end
+%             if(epoch.rp)
+            epochs = [epochs,epoch];
+%             end
         end
-   end
+    end
+   
 end
 
 

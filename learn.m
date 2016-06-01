@@ -20,10 +20,11 @@ function [prin_comp,classifier,opt_thr ] = learn( eegT, eegNT,w_size)
     classifier = obj.W;
     Q0 = (X0*prin_comp)*classifier;
     Q1 = (X1*prin_comp) * classifier;
-    [Xroc,Yroc,T,square,opt_roc_point] = perfcurve([ones(N1,1); zeros(N0,1)], [Q1; Q0], 0);
+%     [Xroc,Yroc,T,square,opt_roc_point] = perfcurve([ones(N1,1); zeros(N0,1)], [Q1; Q0], 0);
     
-    ind = ([Xroc,Yroc] == repmat(opt_roc_point,size(Xroc,1),1));
-    opt_thr = T(find(ind(:,1) & ind(:,2)));
+%     ind = ([Xroc,Yroc] == repmat(opt_roc_point,size(Xroc,1),1));
+%     opt_thr = T(find(ind(:,1) & ind(:,2)));
+    opt_thr=[];
 
 end
 

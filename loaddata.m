@@ -1,4 +1,4 @@
-function [ eegTRP1,eegTRP2, eegNT] = loaddata(datapath,fs,window_size)
+function [ eegTRP1, eegNT] = loaddata(datapath,fs,window_size)
 %loaddata Cut epochs frow semi-raw data
 if isempty(datapath)
     datapath = '../exp3/data/';
@@ -31,17 +31,9 @@ for i =1:size(ends,2)
     if ~isempty(tmp_rp1_epochs)
         rp1_epochs = cat(3,rp1_epochs,tmp_rp1_epochs);
     end
-    
-    if ~isempty(tmp_rp2_epoch)
-        rp2_epochs = cat(3,rp2_epochs,tmp_rp2_epoch);
-    end
 end
 
-
-eegTRP2 = rp2_epochs;
-
 eegTRP1 = rp1_epochs;
-
 nt1 = nontarget_epochs1(:,:,randperm(length(nontarget_epochs1)));
 nt2 = nontarget_epochs2(:,:,randperm(length(nontarget_epochs2)));
 eegNT= cat(3,nt1,nt2);
@@ -50,29 +42,17 @@ eegNT= cat(3,nt1,nt2);
 
 end
 
-function [nontarget_epochs1,nontarget_epochs2,rp1_epochs,rp2_epoch] = process_interval(interval_data,grad,epoch_mask,w_size,fs)
+function [nontarget_epochs1,nontarget_epochs2,rp1_epochs] = process_interval(interval_data,grad,epoch_mask,w_size,fs)
     nontarget_epochs1 = [];
     nontarget_epochs2 = [];
     rp1_epochs = [];
-    rp2_epoch = [];
-    if(sum(epoch_mask) == 35 && find(epoch_mask == 10) > 600) % 12+13+10, so interval contain movement
+    rp_time = 2;%RP length - 2seconds
+    if(sum(epoch_mask) == 35 && find(epoch_mask == 10) > (rp_time*fs)) % 12+13+10, so interval contain movement,
         %And this movement 3s after beginning of the interval
         %We have only one rp2 epoch in whole interval
-        movement = find(epoch_mask==10);
-        end_rp2_epoch = movement - 100 * fs /1000;
-        start_rp2_epoch = end_rp2_epoch - w_size+1;
-        
-        rp2_epoch = interval_data(start_rp2_epoch:end_rp2_epoch,:);
-        baseline = mean(interval_data(start_rp2_epoch - w_size:start_rp2_epoch-1,:),1);
-        baseline_corrected = rp2_epoch - repmat(baseline,size(rp2_epoch,1),1);
-        if ~is_relevant(rp2_epoch,grad,baseline_corrected)
-            rp2_epoch = [];
-        else
-            rp2_epoch = baseline_corrected;
-        end
-        
-        start_rp1_data = movement - 2000 * fs /1000;
-        end_rp1_data = movement - 800 * fs /1000;
+        movement = find(epoch_mask==10);      
+        start_rp1_data = movement - 1500 * fs /1000;
+        end_rp1_data = movement - 500 * fs /1000;
         rp1_epochs = cat(3,rp1_epochs,make_epochs(interval_data(start_rp1_data-w_size+1:end_rp1_data,:), ... %additional window for baseline
             grad(start_rp1_data:end_rp1_data,:),w_size));
         

@@ -1,4 +1,4 @@
-function [ eegTRP1, eegNT] = loaddata(datapath,fs,window_size)
+function [ eegTRP1, eegNT] = loaddata(datapath,fs,window_size,start_rp_time,end_rp_time)
 %loaddata Cut epochs frow semi-raw data
 if isempty(datapath)
     datapath = '../exp3/data/';
@@ -19,7 +19,8 @@ nontarget_epochs1 = [];nontarget_epochs2 = [];rp1_epochs = [];
 rp2_epochs = [];
 
 for i =1:size(ends,2)
-    [tmp_nontarget_epochs1,tmp_nontarget_epochs2,tmp_rp1_epochs,tmp_rp2_epoch] = process_interval(data(starts(i):ends(i),:),grad(starts(i):ends(i),:),mask(starts(i):ends(i)),window_size,fs);
+    [tmp_nontarget_epochs1,tmp_nontarget_epochs2,tmp_rp1_epochs,tmp_rp2_epoch] = process_interval(data(starts(i):ends(i),:),grad(starts(i):ends(i),:),mask(starts(i):ends(i)),window_size,fs, ...
+        start_rp_time,end_rp_time);
     if ~isempty(tmp_nontarget_epochs1)
         nontarget_epochs1 = cat(3,nontarget_epochs1,tmp_nontarget_epochs1);
     end
@@ -42,7 +43,7 @@ eegNT= cat(3,nt1,nt2);
 
 end
 
-function [nontarget_epochs1,nontarget_epochs2,rp1_epochs] = process_interval(interval_data,grad,epoch_mask,w_size,fs)
+function [nontarget_epochs1,nontarget_epochs2,rp1_epochs] = process_interval(interval_data,grad,epoch_mask,w_size,fs,start_rp_time,end_rp_time)
     nontarget_epochs1 = [];
     nontarget_epochs2 = [];
     rp1_epochs = [];
@@ -51,8 +52,8 @@ function [nontarget_epochs1,nontarget_epochs2,rp1_epochs] = process_interval(int
         %And this movement 3s after beginning of the interval
         %We have only one rp2 epoch in whole interval
         movement = find(epoch_mask==10);      
-        start_rp1_data = movement - 1500 * fs /1000;
-        end_rp1_data = movement - 500 * fs /1000;
+        start_rp1_data = movement + start_rp_time * fs /1000;
+        end_rp1_data = movement + end_rp_time * fs /1000;
         rp1_epochs = cat(3,rp1_epochs,make_epochs(interval_data(start_rp1_data-w_size+1:end_rp1_data,:), ... %additional window for baseline
             grad(start_rp1_data:end_rp1_data,:),w_size));
         

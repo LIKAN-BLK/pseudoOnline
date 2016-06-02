@@ -1,8 +1,11 @@
 function [] = pseudoOnlineExp3()
 data_path = '../exp3/data/';
 fs = 200; %Hz
-w_size = 400 * fs/1000; %400ms
-[ eegTRP1,eegTRP2, eegNT] = loaddata(data_path,fs,w_size);
+w_size_time = 400;%400ms
+w_size = w_size_time * fs/1000;
+rp_start = -1500;
+rp_end=-500;
+[ eegTRP1,eegTRP2, eegNT] = loaddata(data_path,fs,w_size,rp_start,rp_end);
 
 [prin_comp,classifier, opt_thr] = learn(cat(3,eegTRP2(:,:,1:200),eegTRP1(:,:,1:200)),eegNT(:,:,1:500),w_size);
 
@@ -86,7 +89,7 @@ function [classifierOutput,epochs,contain_event] = process_interval(data,rp_mask
             epoch_end = i+baseline_size+w_size-1;
             epoch.data = data(epoch_start:epoch_end,:)-repmat(mean(base_line,1),w_size,1);
             if (is_relevant(epoch.data,grad(epoch_start:epoch_end,:)))
-                [X] = get_feats(epoch.data,200, 0, 400);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms      
+                [X] = get_feats(epoch.data,200, 0, w_size*1000/200);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms  fs = 200    
                 if all(rp_mask(epoch_start:epoch_end))   %If Epoch BEFORE RP, we mark it by 0 label, if epoch AFTER rp, we mark it by -1 label
                     epoch.rp = 1;
                 else

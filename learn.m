@@ -1,4 +1,4 @@
-function [prin_comp,classifier,opt_thr ] = learn( eegT, eegNT,w_size)
+function [prin_comp,classifier,opt_thr ] = learn( eegT, eegNT,w_size,w_size_time,fs)
 %get_classifier_mat Returns classifier matrix
 
 %     tmp = reshape(cat(3,eegNT,eegT),size(eegNT,1),size(eegNT,2)*(size(eegNT,3)+size(eegT,3)));
@@ -6,8 +6,8 @@ function [prin_comp,classifier,opt_thr ] = learn( eegT, eegNT,w_size)
 %     sigma = std(tmp,0,2);
 %     clear tmp; 
 
-    [X1] = get_feats(eegT, 200, 0, 400); %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms   
-    [X0] = get_feats(eegNT, 200, 0, 400);
+    [X1] = get_feats(eegT, fs, 0, w_size_time); %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms   
+    [X0] = get_feats(eegNT, fs, 0, w_size_time);
     
     N0 = size(X0, 1);
     N1 = size(X1, 1);

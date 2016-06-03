@@ -5,9 +5,9 @@ w_size_time = 400;%400ms
 w_size = w_size_time * fs/1000;
 rp_start = -1500;
 rp_end=-500;
-[ eegTRP1,eegTRP2, eegNT] = loaddata(data_path,fs,w_size,rp_start,rp_end);
+[ eegTRP,eegNT] = loaddata(data_path,fs,w_size,rp_start,rp_end);
 
-[prin_comp,classifier, opt_thr] = learn(cat(3,eegTRP2(:,:,1:200),eegTRP1(:,:,1:200)),eegNT(:,:,1:500),w_size);
+[prin_comp,classifier, opt_thr] = learn(eegTRP(:,:,1:200),eegNT(:,:,1:500),w_size,w_size_time,fs);
 
 
 data = load([data_path 'rawdata.mat']);

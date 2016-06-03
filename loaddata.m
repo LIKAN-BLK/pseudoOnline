@@ -16,10 +16,9 @@ ends = find(mask == 13);
 starts = starts(1:size(ends,2));
 
 nontarget_epochs1 = [];nontarget_epochs2 = [];rp1_epochs = [];
-rp2_epochs = [];
-
 for i =1:size(ends,2)
-    [tmp_nontarget_epochs1,tmp_nontarget_epochs2,tmp_rp1_epochs,tmp_rp2_epoch] = process_interval(data(starts(i):ends(i),:),grad(starts(i):ends(i),:),mask(starts(i):ends(i)),window_size,fs, ...
+    [tmp_nontarget_epochs1,tmp_nontarget_epochs2,tmp_rp1_epochs] = ...
+        process_interval(data(starts(i):ends(i),:),grad(starts(i):ends(i),:),mask(starts(i):ends(i)),window_size,fs, ...
         start_rp_time,end_rp_time);
     if ~isempty(tmp_nontarget_epochs1)
         nontarget_epochs1 = cat(3,nontarget_epochs1,tmp_nontarget_epochs1);
@@ -104,12 +103,9 @@ end
 
 
 function [is_relevant] = is_relevant(data,grad,baseline_corrected)
-%     absoluteBlow = sum(max(abs(data),1) > 150) > 3;
     baselineBlow = sum(max(abs(baseline_corrected),[],1) > 70) > 3;
     gradBlow = sum(mean(abs(grad),1) > 2) > 2;
-%     gradBlow = false;
     is_relevant = ~(baselineBlow | gradBlow); 
-%     is_relevant = true;
 end
 
 

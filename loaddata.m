@@ -1,4 +1,4 @@
-function [ eegTRP1, eegNT] = loaddata(datapath,fs,window_size,start_rp_time,end_rp_time)
+function [ eegTRP1, eegNT] = loaddata(datapath,fs,window_size,baseline_time,start_rp_time,end_rp_time)
 %loaddata Cut epochs frow semi-raw data
 if isempty(datapath)
     datapath = '../exp3/data/';
@@ -19,7 +19,7 @@ nontarget_epochs1 = [];nontarget_epochs2 = [];rp1_epochs = [];
 for i =1:size(ends,2)
     [tmp_nontarget_epochs1,tmp_nontarget_epochs2,tmp_rp1_epochs] = ...
         process_interval(data(starts(i):ends(i),:),grad(starts(i):ends(i),:),mask(starts(i):ends(i)),window_size,fs, ...
-        start_rp_time,end_rp_time);
+        baseline_time,start_rp_time,end_rp_time);
     if ~isempty(tmp_nontarget_epochs1)
         nontarget_epochs1 = cat(3,nontarget_epochs1,tmp_nontarget_epochs1);
     end
@@ -42,7 +42,8 @@ eegNT= cat(3,nt1,nt2);
 
 end
 
-function [nontarget_epochs1,nontarget_epochs2,rp1_epochs] = process_interval(interval_data,grad,epoch_mask,w_size,fs,start_rp_time,end_rp_time)
+function [nontarget_epochs1,nontarget_epochs2,rp1_epochs] = process_interval(interval_data,grad,epoch_mask,w_size,fs,baseline_time,start_rp_time,end_rp_time)
+    bline_width = baseline_time*fs/1000;
     nontarget_epochs1 = [];
     nontarget_epochs2 = [];
     rp1_epochs = [];
@@ -54,25 +55,25 @@ function [nontarget_epochs1,nontarget_epochs2,rp1_epochs] = process_interval(int
         start_rp1_data = movement + start_rp_time * fs /1000;
         end_rp1_data = movement + end_rp_time * fs /1000;
         rp1_epochs = cat(3,rp1_epochs,make_epochs(interval_data(start_rp1_data-w_size+1:end_rp1_data,:), ... %additional window for baseline
-            grad(start_rp1_data:end_rp1_data,:),w_size));
+            grad(start_rp1_data:end_rp1_data,:),w_size,bline_width));
         
-        if ( movement - (2000 *fs/1000) - (1000*fs/1000)) > 2*w_size %We throw out 1s after interval beginning and 2s before movement
+        if ( movement - (2000 *fs/1000) - (1000*fs/1000)) > (bline_width + w_size) %We throw out 1s after interval beginning and 2s before movement
             % 10 minus 2s of rp and 1s after 12 label (one window for classifier
             %one window for baseline)
             start_rel_data = (1000*fs/1000); %We will use data 1s from 12
             end_rel_data = movement - (2000 *fs/1000);  %We will use data 2s before movement
             tmp_nontarget_epochs1 =  make_epochs(interval_data(start_rel_data:end_rel_data,:), ...
-                grad(start_rel_data:end_rel_data,:), w_size);
+                grad(start_rel_data:end_rel_data,:), w_size,bline_width);
             if(~isempty(tmp_nontarget_epochs1))
                 nontarget_epochs1 = cat(3,nontarget_epochs1,tmp_nontarget_epochs1);
             end
         end
-        if (size(interval_data,1) - (movement +(1000 *fs/1000)) - (1000*fs/1000)) > 2*w_size %We throw out 1s after movement and 1 second before interval end
+        if (size(interval_data,1) - (movement +(1000 *fs/1000)) - (1000*fs/1000)) > (bline_width + w_size) %We throw out 1s after movement and 1 second before interval end
             start_rel_data = (movement + 1000*fs/1000); %We will use data 1s after 10 label
             end_rel_data = size(interval_data,1) - (1000 *fs/1000);  %We will use data 1s before 13 label
             
             tmp_nontarget_epochs1 = make_epochs(interval_data(start_rel_data:end_rel_data,:), ...
-                grad(start_rel_data:end_rel_data,:), w_size);
+                grad(start_rel_data:end_rel_data,:), w_size,bline_width);
             if(~isempty(tmp_nontarget_epochs1))
                 nontarget_epochs1 = cat(3,nontarget_epochs1,tmp_nontarget_epochs1);
             end
@@ -82,19 +83,19 @@ function [nontarget_epochs1,nontarget_epochs2,rp1_epochs] = process_interval(int
         end_rel_data = size(interval_data,1);
         
         [nontarget_epochs2] = make_epochs(interval_data(start_rel_data:end_rel_data,:), ...
-            grad(start_rel_data:end_rel_data,:), w_size);
+            grad(start_rel_data:end_rel_data,:), w_size,bline_width);
     end
         
 end
 
-function [epochs] = make_epochs(data,grad,w_size) 
+function [epochs] = make_epochs(data,grad,w_size,bline_width) 
     epochs= [];
-    for i = size(data,1):-w_size:2*w_size %last window for baseline
+    for i = size(data,1):-w_size:(bline_width+w_size) %last window for baseline
         tmp_epoch = data(i-w_size+1:i,:);
-        baseline = mean(data(i-2*w_size + 1:i-w_size,:),1);
+        baseline = mean(data(i-(bline_width+w_size) + 1:i-w_size,:),1);
         bcorrected_epoch = tmp_epoch - repmat(baseline,size(tmp_epoch,1),1);
         if ~isempty(tmp_epoch)
-            if is_relevant(tmp_epoch,grad(i-2*w_size+1:i-w_size,:),bcorrected_epoch)
+            if is_relevant(tmp_epoch,grad(i-w_size+1:i,:),bcorrected_epoch)
                 epochs = cat(3,epochs,bcorrected_epoch); 
             end
         end

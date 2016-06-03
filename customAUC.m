@@ -83,6 +83,5 @@ for  thres= thresholds
     TPR = [TPR,tmp_TPR];
     FPR = [FPR,tmp_FPR];
 end
-plot(thresholds,[FPR.value],'b');
-hold on, plot(thresholds,[TPR.value],'r'),hold off;
+plot(thresholds,[FPR.value],'b',thresholds,[TPR.value],'r'),legend('FPR','TPR');
 auc = trapz([FPR.value],[TPR.value]);

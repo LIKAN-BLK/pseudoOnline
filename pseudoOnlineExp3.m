@@ -1,11 +1,12 @@
 function [] = pseudoOnlineExp3()
 data_path = '../exp3/data/';
 fs = 200; %Hz
+baseline_time=200; %200ms
 w_size_time = 400;%400ms
 w_size = w_size_time * fs/1000;
-rp_start = -1500;
+rp_start = -1200;
 rp_end=-500;
-[ eegTRP,eegNT] = loaddata(data_path,fs,w_size,rp_start,rp_end);
+[ eegTRP,eegNT] = loaddata(data_path,fs,w_size,baseline_time,rp_start,rp_end);
 
 [prin_comp,classifier, opt_thr] = learn(eegTRP(:,:,1:200),eegNT(:,:,1:500),w_size,w_size_time,fs);
 
@@ -47,7 +48,8 @@ for i=1:size(ends,2)
 
        
        
-   [clfOut,intervals{i},intervals_contain_rp(i)] = process_interval(interval,rp_mask,grad(starts(i):ends(i),:),w_size,w_step,prin_comp,classifier);
+   [clfOut,intervals{i},intervals_contain_rp(i)] = ...
+       process_interval(interval,rp_mask,grad(starts(i):ends(i),:),w_size_time,fs,w_step,prin_comp,classifier);
     
 %    clf_mv_ind = find(rp_mask == 1);
 %    
@@ -72,7 +74,8 @@ intervals_contain_rp = intervals_contain_rp(~isnan(intervals_contain_rp));
 [ auc ] = customAUC( intervals,intervals_contain_rp);
 end
 
-function [classifierOutput,epochs,contain_event] = process_interval(data,rp_mask,grad,w_size,w_step,prin_comp,classifier)
+function [classifierOutput,epochs,contain_event] = process_interval(data,rp_mask,grad,w_size_time,fs,w_step,prin_comp,classifier)
+    w_size = w_size_time*fs/1000;
     classifierOutput = nan(size(rp_mask));
     epochs=[];
     rp_start = find(rp_mask == 1,1);
@@ -89,7 +92,7 @@ function [classifierOutput,epochs,contain_event] = process_interval(data,rp_mask
             epoch_end = i+baseline_size+w_size-1;
             epoch.data = data(epoch_start:epoch_end,:)-repmat(mean(base_line,1),w_size,1);
             if (is_relevant(epoch.data,grad(epoch_start:epoch_end,:)))
-                [X] = get_feats(epoch.data,200, 0, w_size*1000/200);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms  fs = 200    
+                [X] = get_feats(epoch.data,200, 0, w_size_time);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms  fs = 200    
                 if all(rp_mask(epoch_start:epoch_end))   %If Epoch BEFORE RP, we mark it by 0 label, if epoch AFTER rp, we mark it by -1 label
                     epoch.rp = 1;
                 else

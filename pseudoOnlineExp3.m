@@ -4,8 +4,8 @@ fs = 200; %Hz
 baseline_time=200; %200ms
 w_size_time = 400;%400ms
 w_size = w_size_time * fs/1000;
-rp_start = -1200;
-rp_end=-500;
+rp_start = -1500;
+rp_end=-800;
 [ eegTRP,eegNT] = loaddata(data_path,fs,w_size,baseline_time,rp_start,rp_end);
 
 [prin_comp,classifier, opt_thr] = learn(eegTRP(:,:,1:200),eegNT(:,:,1:500),w_size,w_size_time,fs);
@@ -94,12 +94,12 @@ function [classifierOutput,epochs,contain_event] = process_interval(data,rp_mask
             if (is_relevant(epoch.data,grad(epoch_start:epoch_end,:)))
                 [X] = get_feats(epoch.data,200, 0, w_size_time);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms  fs = 200    
                 if all(rp_mask(epoch_start:epoch_end))   %If Epoch BEFORE RP, we mark it by 0 label, if epoch AFTER rp, we mark it by -1 label
-                    epoch.rp = 1;
+                    epoch.rp = 1.0;
                 else
                     if rp_start < (epoch_start-w_size) 
-                        epoch.rp = 0;
+                        epoch.rp = 0.0;
                     else
-                        epoch.rp = -1;
+                        epoch.rp = -1.0;
                     end
                 end
 
@@ -118,5 +118,6 @@ end
 function [is_relevant] = is_relevant(baseline_corrected,grad)
     baselineBlow = sum(max(abs(baseline_corrected),[],1) > 70) > 3;
     gradBlow = sum(mean(abs(grad),1) > 2) > 2;
-    is_relevant = ~(baselineBlow | gradBlow);  
+    is_relevant = ~(baselineBlow | gradBlow);
+    is_relevant = true;
 end

@@ -32,8 +32,7 @@ ends = find(mask == 13);
 
 w_step = 10 * fs/1000; %10ms
 
-classifierOutput = {};
-intervals_contain_rp = nan(1,length(ends));
+intervals_rp_mask = nan(1,length(ends));
 for i=1:size(ends,2)
    interval = data(starts(i):ends(i),:);
    movement = find(mask(starts(i):ends(i)) == 10);
@@ -48,7 +47,7 @@ for i=1:size(ends,2)
 
        
        
-   [clfOut,intervals{i},intervals_contain_rp(i)] = ...
+   [clfOut,intervals{i},intervals_rp_mask(i)] = ...
        process_interval(interval,rp_mask,grad(starts(i):ends(i),:),w_size_time,fs,w_step,prin_comp,classifier);
     
 %    clf_mv_ind = find(rp_mask == 1);
@@ -70,18 +69,26 @@ end
 % time = time - time(length(time))/2;
 % plot(time,hist1(1,:));
 intervals = intervals(~cellfun(@isempty, intervals));
-intervals_contain_rp = intervals_contain_rp(~isnan(intervals_contain_rp));
-[ auc ] = customAUC( intervals,intervals_contain_rp);
+intervals_rp_mask = intervals_rp_mask(~isnan(intervals_rp_mask));
+visualise(intervals,intervals_rp_mask,'histogram')
+[ auc ] = customAUC( intervals,intervals_rp_mask);
 end
 
 function [classifierOutput,epochs,contain_event] = process_interval(data,rp_mask,grad,w_size_time,fs,w_step,prin_comp,classifier)
     w_size = w_size_time*fs/1000;
     classifierOutput = nan(size(rp_mask));
     epochs=[];
-    rp_start = find(rp_mask == 1,1);
-    if isempty(rp_start)
+    rp = find(rp_mask == 1);
+    if isempty(rp)
         rp_start = length(data);
+        rp_end = 1; % for epochs without RP, for correct calc of dt_before_mov
+    else
+        rp_start = rp(1);
+        rp_end = rp(end);
     end
+    
+    
+    
     contain_event = (sum(rp_mask)>0);
     if (sum(rp_mask)>=0)        %sum(rp_mask)>=0 - for all intervals, sum(rp_mask)>0 - for intervals with RP
         baseline_size = w_size;
@@ -102,15 +109,15 @@ function [classifierOutput,epochs,contain_event] = process_interval(data,rp_mask
                         epoch.rp = -1.0;
                     end
                 end
-
-                epoch.rp = all(rp_mask(epoch_start:epoch_end));          
+                epoch.dt_before_mov = (epoch_end - rp_end)/fs;          
                
                 epoch.Q = (X * prin_comp)* classifier;
                 epochs = [epochs,epoch];
+                
             end
         end
     end
-   
+  
 end
 
 

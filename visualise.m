@@ -42,6 +42,35 @@
 %         classifierOutput2{i} = clfOut2(tmp_start:tmp_end);
 %     end
 %    end
+function [] = visualise(intervals,intervals_with_rp,type)
+    
+    if(strcmp(type,'histogram'))
+        hists = [];
+        thresholds = -10:0.5:10;
+        for  thres= thresholds
+            hist=[];
+            for i = 1:length(intervals)
+                interval = intervals{i};
+                classifer_triggered = false;
+                for epoch = interval
+                   if(epoch.Q<thres)
+                        hist = [hist,epoch.dt_before_mov];
+                        classifer_triggered = true;
+                        break;
+                   end
+                end
+                if(~classifer_triggered) && intervals_with_rp(i)
+                    hist = [hist,15];                           %if classifier not triggered, we consider, that it triggered VERY late (10s)
+                end
+            end
+            hists_elem.thres = thres;
+            hists_elem.hist = hist;
+            histogram(hist);
+            title(sprintf('Threshold = %f',thres));
+            hists = [hists,hist];
+        end
+    end
+end
 
 
 

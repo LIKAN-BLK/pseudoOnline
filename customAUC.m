@@ -61,7 +61,7 @@ for  thres= thresholds
         for j = 1:3:size(interval,2)-(3-1)
             epochs_window = interval(j:j+3-1);
             if (sum([epochs_window.Q] < thres) > 2)
-                rp_rate = mode([epochs_window.rp]+0); %To convert from logical to double
+                rp_rate = mode([epochs_window.rp]); %To convert from logical to double
                 switch (rp_rate)
                     case 1
                         TP = TP + 1;

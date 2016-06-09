@@ -43,7 +43,7 @@
 %     end
 %    end
 function [] = visualise(intervals,intervals_with_rp,type)
-    
+    %Histogram for times when classifier triggers
     if(strcmp(type,'histogram'))
         hists = [];
         thresholds = -10:0.5:10;
@@ -70,6 +70,31 @@ function [] = visualise(intervals,intervals_with_rp,type)
             hists = [hists,hist];
         end
     end
+    
+    if(strcmp(type,'hist_clf_output'))
+        target_hist=[];
+        nontarget_hist=[];
+        for i = 1:length(intervals)
+            interval = intervals{i};
+            for epoch = interval
+               if(~isnan(epoch.Q))
+                   switch(epoch.rp)
+                       case 1
+                           target_hist = [target_hist,epoch.Q];
+                       case 0
+                           nontarget_hist=[nontarget_hist,epoch.Q];
+                   end
+               end
+            end            
+        end
+        histogram(target_hist),hold on,histogram(nontarget_hist);
+        legend('Target','NonTarget')
+%         histogram(target_hist);
+%         title(sprintf('Target'));
+%         figure();
+%         histogram(nontarget_hist);
+%         title(sprintf('NonTarget'));
+    end   
 end
 
 

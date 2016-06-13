@@ -77,17 +77,23 @@ function [] = visualise(intervals,intervals_with_rp,type)
         for i = 1:length(intervals)
             interval = intervals{i};
             for epoch = interval
-               if(~isnan(epoch.Q))
-                   switch(epoch.rp)
-                       case 1
-                           target_hist = [target_hist,epoch.Q];
-                       case 0
-                           nontarget_hist=[nontarget_hist,epoch.Q];
-                   end
-               end
+%                if(~isnan(epoch.Q))
+%                    switch(epoch.rp)
+%                        case 0
+%                            nontarget_hist=[nontarget_hist,epoch.Q];
+%                        case 1
+%                            target_hist = [target_hist,epoch.Q];
+%                    end
+                    if(epoch.rp == 1)
+                        target_hist = [target_hist,epoch.Q];
+                    end
+                    if(epoch.rp == 0)
+                        nontarget_hist=[nontarget_hist,epoch.Q];
+                    end
+%                end
             end            
         end
-        histogram(target_hist),hold on,histogram(nontarget_hist);
+        figure(2),histogram(target_hist),hold on,histogram(nontarget_hist);
         legend('Target','NonTarget')
 %         histogram(target_hist);
 %         title(sprintf('Target'));

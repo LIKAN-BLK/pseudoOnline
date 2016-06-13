@@ -39,8 +39,6 @@ for  thres= thresholds
         end    
     end
     
-    disp(sprintf('Mean clf output TP= %f\n\r',mean(TP_clf_out)));
-    disp(sprintf('Mean clf output FP= %f\n\r',mean(FP_clf_out)));
     tmp_TPR.value=TP/(TP+FN);
     tmp_TPR.threshold = thres;
     tmp_FPR.value=FP/(FP+TN);

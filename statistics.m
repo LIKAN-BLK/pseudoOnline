@@ -1,6 +1,7 @@
-function [] = statistics(save_path, intervals,intervals_with_rp )
+function [] = statistics(save_path,parameters_string, intervals,intervals_with_rp )
 %Save all statistics (2 types hists and pseudoAUC to files
-%   
+%
+mkdir([save_path '/' parameters_string '/']);
 thresholds=-10:0.5:10;
 TPR = [];
 FPR = [];
@@ -39,7 +40,7 @@ for  thres= thresholds
     end
     histogram(hist);
     title(sprintf('Threshold = %f\n',thres));
-    saveas(gcf,[save_path num2str(thres) '.png']);
+    saveas(gcf,[save_path '/' parameters_string '/' num2str(thres) '.png']);
     close;
     tmp_TPR.value=TP/(TP+FN);
     tmp_TPR.threshold = thres;
@@ -50,10 +51,8 @@ for  thres= thresholds
 end
 plot(thresholds,[FPR.value],'b',thresholds,[TPR.value],'r'),legend('FPR','TPR');
 title('TPR_FPR.png');
-saveas(gcf,[save_path 'TPR_FPR.png']);
+saveas(gcf,[save_path parameters_string 'TPR_FPR.png']);
 close;
 auc = trapz([FPR.value],[TPR.value]);
-
-
 end
 

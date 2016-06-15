@@ -72,11 +72,13 @@ histogram(hist_clf_output_t),hold on,histogram(hist_clf_output_nt);
 legend('Target','NonTarget')
 saveas(gcf,[save_path  parameters_string '_hist.png']);
 close;
+save([save_path  parameters_string '_clf_out.mat'], ...
+    'hist_clf_output_t','hist_clf_output_nt','target_start','target_end','w_size_time');
 
 tmp_intervals = intervals(~cellfun(@isempty, intervals));
 tmp_intervals_rp_mask = intervals_rp_mask(~isnan(intervals_rp_mask));
-% statistics(save_path,parameters_string, tmp_intervals,tmp_intervals_rp_mask)
-visualise(tmp_intervals,tmp_intervals_rp_mask,'hist_clf_output')
+statistics(save_path,parameters_string, tmp_intervals,tmp_intervals_rp_mask)
+% visualise(tmp_intervals,tmp_intervals_rp_mask,'hist_clf_output')
 % [ auc ] = customAUC( intervals,intervals_rp_mask);
 end
 

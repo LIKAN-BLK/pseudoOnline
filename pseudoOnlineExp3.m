@@ -68,12 +68,21 @@ for i=1:size(ends,2)
     
        
 end
+[~,~,~,auc] = perfcurve([zeros(size(hist_clf_output_t)),ones(size(hist_clf_output_nt))],[hist_clf_output_t,hist_clf_output_nt],1);
+fileID = fopen([data_path, 'results/' 'AUCs.txt'],'a');
+pseudoFisher = (mean(hist_clf_output_t)-mean(hist_clf_output_nt))^2/(cov(hist_clf_output_t)+cov(hist_clf_output_nt));
+fprintf(fileID,'%s, AUC = %f, pFisher = %f \n\r',parameters_string,auc,pseudoFisher);
+fclose(fileID);
 histogram(hist_clf_output_t),hold on,histogram(hist_clf_output_nt);
 legend('Target','NonTarget')
+title(sprintf('auc=%f,pFisher=%f',auc,pseudoFisher));
+
 saveas(gcf,[save_path  parameters_string '_hist.png']);
 close;
 save([save_path  parameters_string '_clf_out.mat'], ...
     'hist_clf_output_t','hist_clf_output_nt','target_start','target_end','w_size_time');
+
+
 
 tmp_intervals = intervals(~cellfun(@isempty, intervals));
 tmp_intervals_rp_mask = intervals_rp_mask(~isnan(intervals_rp_mask));

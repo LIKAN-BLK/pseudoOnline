@@ -3,6 +3,9 @@ function [] = pseudoOnlineExp3(data_path,w_size_time,target_start,target_end)
 parameters_string = sprintf('s_%de_%dw_%d',target_start,target_end,w_size_time);
 save_path = [data_path, 'results/'];
 mkdir(save_path);
+mkdir([save_path 'clf_out_hist_pics/']);
+mkdir([save_path 'clf_out_hist_data/']);
+mkdir([save_path 'TPR_FPRs/']);
 fs = 200; %Hz
 baseline_time=200; %200ms
 
@@ -73,13 +76,12 @@ fileID = fopen([data_path, 'results/' 'AUCs.txt'],'a');
 pseudoFisher = (mean(hist_clf_output_t)-mean(hist_clf_output_nt))^2/(cov(hist_clf_output_t)+cov(hist_clf_output_nt));
 fprintf(fileID,'%s, AUC = %f, pFisher = %f \n\r',parameters_string,auc,pseudoFisher);
 fclose(fileID);
-histogram(hist_clf_output_t),hold on,histogram(hist_clf_output_nt);
-legend('Target','NonTarget')
-title(sprintf('auc=%f,pFisher=%f',auc,pseudoFisher));
-
-saveas(gcf,[save_path  parameters_string '_hist.png']);
-close;
-save([save_path  parameters_string '_clf_out.mat'], ...
+% histogram(hist_clf_output_t),hold on,histogram(hist_clf_output_nt);
+% legend('Target','NonTarget')
+% title(sprintf('auc=%f,pFisher=%f',auc,pseudoFisher));
+% saveas(gcf,[save_path 'clf_out_hist_pics/' parameters_string '_hist.png']);
+% close;
+save([save_path 'clf_out_hist_data/'  parameters_string '_clf_out.mat'], ...
     'hist_clf_output_t','hist_clf_output_nt','target_start','target_end','w_size_time');
 
 

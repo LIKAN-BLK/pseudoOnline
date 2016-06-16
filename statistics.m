@@ -10,13 +10,13 @@ for  thres= thresholds
     FP=0;
     FN=0;
     TN=0;
-    hist=[];
+    tmp_hist=[];
     for i = 1:length(intervals)
         interval = intervals{i};
         classifer_triggered = false;
         for epoch = interval
             if(epoch.Q < thres)
-                hist = [hist,epoch.dt_before_mov];
+                tmp_hist = [tmp_hist,epoch.dt_before_mov];
                 switch (epoch.rp)
                     case 1
                         TP = TP + 1;
@@ -38,10 +38,12 @@ for  thres= thresholds
             end
         end    
     end
-    histogram(hist,max(10,abs(max(hist) - min(hist))*10));
-    title(sprintf('Threshold = %f\n',thres));
-    saveas(gcf,[save_path '/' parameters_string '/' num2str(thres) '.png']);
-    close;
+    if ~isempty(tmp_hist)
+        hist(tmp_hist,max(5,abs(max(tmp_hist) - min(tmp_hist))*10));
+        title(sprintf('Threshold = %f\n',thres));
+        saveas(gcf,[save_path '/' parameters_string '/' num2str(thres) '.png']);
+        close;
+    end
     tmp_TPR.value=TP/(TP+FN);
     tmp_TPR.threshold = thres;
     tmp_FPR.value=FP/(FP+TN);
@@ -50,8 +52,8 @@ for  thres= thresholds
     FPR = [FPR,tmp_FPR];
 end
 plot(thresholds,[FPR.value],'b',thresholds,[TPR.value],'r'),legend('FPR','TPR');
-title('TPR_FPR.png');
-saveas(gcf,[save_path parameters_string 'TPR_FPR.png']);
+title('TPR_FPR');
+saveas(gcf,[save_path 'TPR_FPRs/' parameters_string 'TPR_FPR.png']);
 close;
 auc = trapz([FPR.value],[TPR.value]);
 end

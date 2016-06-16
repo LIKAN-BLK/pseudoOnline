@@ -65,7 +65,7 @@ function [] = visualise(intervals,intervals_with_rp,type)
             end
             hists_elem.thres = thres;
             hists_elem.hist = hist;
-            histogram(hist);
+            histogram(hist,abs(max(hist) - min(hist))*100 );
             title(sprintf('Threshold = %f',thres));
             hists = [hists,hist];
         end

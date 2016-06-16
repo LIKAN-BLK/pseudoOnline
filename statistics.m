@@ -1,10 +1,13 @@
-function [] = statistics(save_path,parameters_string, intervals,intervals_with_rp )
+function [ACC_threshold,F1_threshold,hist_F1_threshold] = statistics(save_path,parameters_string, intervals,intervals_with_rp )
 %Save all statistics (2 types hists and pseudoAUC to files
 %
 mkdir([save_path '/' parameters_string '/']);
 thresholds=-10:0.5:10;
 TPR = [];
 FPR = [];
+max_F1 = 0;
+max_ACC = 0;
+max_hist_F1 = 0;
 for  thres= thresholds
     TP=0;
     FP=0;
@@ -43,7 +46,25 @@ for  thres= thresholds
         title(sprintf('Threshold = %f\n',thres));
         saveas(gcf,[save_path '/' parameters_string '/' num2str(thres) '.png']);
         close;
+        curr_hist_F1 = length(tmp_hist(tmp_hist > -2 & tmp_hist <0.5))/length(tmp_hist);
+        if(curr_hist_F1 > max_hist_F1)
+            hist_F1_threshold = thres;
+            max_hist_F1 = curr_hist_F1;
+        end
     end
+    
+    
+    curr_F1 = TP/(TP + FN +FP);
+    curr_ACC = (TP+TN)/(TP+TN+FP+FN);
+    if(curr_F1 > max_F1)
+        F1_threshold = thres;
+        max_F1 = curr_F1;
+    end
+    if(curr_ACC > max_ACC)
+        ACC_threshold = thres;
+        max_ACC = curr_ACC;
+    end
+    
     tmp_TPR.value=TP/(TP+FN);
     tmp_TPR.threshold = thres;
     tmp_FPR.value=FP/(FP+TN);

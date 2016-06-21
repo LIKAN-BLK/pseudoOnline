@@ -10,11 +10,11 @@ fs = 200; %Hz
 baseline_time=200; %200ms
 
 w_size = w_size_time * fs/1000;
-[eegTRP,eegNT] = cut_epochs_4learn([],fs,w_size,baseline_time,target_start,target_end);
-[prin_comp,classifier, opt_thr] = learn(eegTRP(:,:,1:200),eegNT(:,:,1:500),w_size,w_size_time,fs);
+[eegTRP,eegNT] = cut_epochs_4learn([],fs,w_size_time,baseline_time,target_start,target_end);
+[prin_comp,classifier, opt_thr] = learn(eegTRP,eegNT,w_size,w_size_time,fs);
 
 
-[data,EOG,mask] = loaddata(data_path);
+[data,EOG,mask] = loaddata(data_path,[1:56],[57,58]);
 
 [~,grad] = gradient(data);
 
@@ -35,7 +35,7 @@ w_step = 10 * fs/1000; %10ms
 intervals_rp_mask = nan(1,length(ends));
 hist_clf_output_t=[];
 hist_clf_output_nt=[];
- counter.one = 0;
+counter.one = 0;
 counter.zero = 0;
 counter.minus = 0;
 counter.all = 0;

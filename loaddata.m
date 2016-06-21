@@ -1,22 +1,14 @@
-function [data,EOG,mask] = loaddata(data_path)
+function [EEG,EOG,mask] = loaddata(data_path,EEGch,EOGch)
 %load_data Get data, eog and mask from files.
 if isempty(data_path)
-    data_path = '../exp4/';
+    data_path = '../exp5/';
 end
-mask = load([data_path 'relmaska.mat']);
-mask = mask.relmaska;
-if exist([data_path 'rawdataAllChnl.mat'],'file') ==2
-    data = load([data_path 'rawdataAllChnl.mat']);
-    EOG = data.eegdata(37:38,:);
-    EOG = EOG';
-    EOG = EOG(:,1)-EOG(:,2);
-else
-    EOG = zeros(size(mask));
-end
+mask = load([data_path 'maska.mat']);
+mask = mask.maska;
+
 
 data = load([data_path 'rawdata.mat']);
-data = (data.eegdata)';
-
-
+EEG = (data.eegdata(EEGch,:))';
+EOG = (data.eegdata(EOGch(1),:) - data.eegdata(EOGch(2),:))';
 end
 

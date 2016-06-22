@@ -42,7 +42,7 @@ for  thres= thresholds
         end    
     end
     if ~isempty(tmp_hist)
-        hist(tmp_hist,max(5,abs(max(tmp_hist) - min(tmp_hist))*10));
+        histogram(tmp_hist,max(5,round(abs(max(tmp_hist) - min(tmp_hist))*10)));
         title(sprintf('Threshold = %f\n',thres));
         saveas(gcf,[save_path '/' parameters_string '/' num2str(thres) '.png']);
         close;

@@ -37,6 +37,7 @@ for  thres= thresholds
             if(intervals_with_rp(i) == 0)
                 TN = TN + 1;
             else
+                tmp_hist = [tmp_hist,5];
                 FN = FN + 1;
             end
         end    
@@ -46,7 +47,7 @@ for  thres= thresholds
         title(sprintf('Threshold = %f\n',thres));
         saveas(gcf,[save_path '/' parameters_string '/' num2str(thres) '.png']);
         close;
-        curr_hist_F1 = length(tmp_hist(tmp_hist > -2 & tmp_hist <0.5))/length(tmp_hist);
+        curr_hist_F1 = length(tmp_hist(tmp_hist > -2 & tmp_hist <-0.5))/length(tmp_hist);
         if(curr_hist_F1 > max_hist_F1)
             hist_F1_threshold = thres;
             max_hist_F1 = curr_hist_F1;

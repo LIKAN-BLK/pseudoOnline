@@ -1,4 +1,6 @@
 function [] = run()
+
+%Clean results directory
 data_path='../exp5/';
 d = dir([data_path,'results/']); %delete all content from results/ dir
 ifile = ~[d(:).isdir];
@@ -13,6 +15,8 @@ for i=1:size(nameFolds,1)
     dir2rm = fullfile([data_path,'results/'],nameFolds{i});
     rmdir(dir2rm, 's');
 end
+
+
 
 %DEFAULTS
 rp_start = -2000;

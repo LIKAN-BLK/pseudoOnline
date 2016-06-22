@@ -88,7 +88,11 @@ save([save_path 'clf_out_hist_data/'  parameters_string '_clf_out.mat'], ...
 
 tmp_intervals = intervals(~cellfun(@isempty, intervals));
 tmp_intervals_rp_mask = intervals_rp_mask(~isnan(intervals_rp_mask));
-statistics(save_path,parameters_string, tmp_intervals,tmp_intervals_rp_mask)
+[hist_F1_threshold] = calc_threshold(intervals,intervals_rp_mask)
+% [ACC_threshold,F1_threshold,hist_F1_threshold] = statistics(save_path,parameters_string, tmp_intervals,tmp_intervals_rp_mask)
+sprintf('acc = %f\n',ACC_threshold)
+sprintf('f1 = %f\n',F1_threshold)
+sprintf('hist_f1 = %f\n',hist_F1_threshold)
 % visualise(tmp_intervals,tmp_intervals_rp_mask,'hist_clf_output')
 % [ auc ] = customAUC( intervals,intervals_rp_mask);
 end

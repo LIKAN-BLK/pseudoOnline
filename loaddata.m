@@ -1,4 +1,4 @@
-function [EEG,EOG,mask] = loaddata(data_path,EEGch,EOGch)
+function [EEG,EOG,mask] = loaddata(data_path,ch_to_use)
 %load_data Get data, eog and mask from files.
 if isempty(data_path)
     data_path = '../exp5/';
@@ -8,7 +8,7 @@ mask = mask.maska;
 
 
 data = load([data_path 'rawdata.mat']);
-EEG = (data.eegdata(EEGch,:))';
-EOG = (data.eegdata(EOGch(1),:) - data.eegdata(EOGch(2),:))';
+EEG = (data.eegdata(ch_to_use.EEGch,:))';
+EOG = (data.eegdata(ch_to_use.EOGch(1),:) - data.eegdata(ch_to_use.EOGch(2),:))';
 end
 

@@ -1,4 +1,4 @@
-function [] = pseudoOnlineExp3(data_path,w_size_time,target_start,target_end)
+function [] = pseudoOnlineExp3(data_path,w_size_time,target_start,target_end,ch_to_use,rel_thres)
 
 parameters_string = sprintf('s_%de_%dw_%d',target_start,target_end,w_size_time);
 save_path = [data_path, 'results/'];
@@ -10,11 +10,11 @@ fs = 200; %Hz
 baseline_time=200; %200ms
 
 w_size = w_size_time * fs/1000;
-[eegTRP,eegNT] = cut_epochs_4learn([],fs,w_size_time,baseline_time,target_start,target_end);
+[eegTRP,eegNT] = cut_epochs_4learn([],fs,w_size_time,baseline_time,target_start,target_end,ch_to_use,rel_thres);
 [prin_comp,classifier, opt_thr] = learn(eegTRP,eegNT,w_size,w_size_time,fs);
 
 
-[data,EOG,mask] = loaddata(data_path,[1:56],[57,58]);
+[data,EOG,mask] = loaddata(data_path,ch_to_use);
 
 [~,grad] = gradient(data);
 
@@ -59,7 +59,7 @@ for i=1:size(ends,2)
        
        
    [intervals{i},intervals_rp_mask(i),tmp_hist_clf_output_t,tmp_hist_clf_output_nt,tmp_counter] = ...
-       process_interval(interval,rp_mask,grad_interval,EOG_interval,w_size_time,baseline_time,fs,w_step,prin_comp,classifier);
+       process_interval(interval,rp_mask,grad_interval,EOG_interval,w_size_time,baseline_time,fs,w_step,prin_comp,classifier,rel_thres);
     
     hist_clf_output_t = [hist_clf_output_t,tmp_hist_clf_output_t];
     hist_clf_output_nt = [hist_clf_output_nt,tmp_hist_clf_output_nt];
@@ -88,17 +88,14 @@ save([save_path 'clf_out_hist_data/'  parameters_string '_clf_out.mat'], ...
 
 tmp_intervals = intervals(~cellfun(@isempty, intervals));
 tmp_intervals_rp_mask = intervals_rp_mask(~isnan(intervals_rp_mask));
-[hist_F1_threshold] = calc_threshold(intervals,intervals_rp_mask)
-% [ACC_threshold,F1_threshold,hist_F1_threshold] = statistics(save_path,parameters_string, tmp_intervals,tmp_intervals_rp_mask)
-sprintf('acc = %f\n',ACC_threshold)
-sprintf('f1 = %f\n',F1_threshold)
+[~,~,hist_F1_threshold] = statistics(save_path,parameters_string, tmp_intervals,tmp_intervals_rp_mask);
 sprintf('hist_f1 = %f\n',hist_F1_threshold)
 % visualise(tmp_intervals,tmp_intervals_rp_mask,'hist_clf_output')
 % [ auc ] = customAUC( intervals,intervals_rp_mask);
 end
 
 function [epochs,contain_event,hist_target,hist_non_target,counter] ...
-    = process_interval(data,rp_mask,grad,eog,w_size_time,baseline_time,fs,w_step,prin_comp,classifier)
+    = process_interval(data,rp_mask,grad,eog,w_size_time,baseline_time,fs,w_step,prin_comp,classifier,rel_thres)
     hist_target = [];
     hist_non_target = [];
     counter.one = 0;
@@ -125,7 +122,7 @@ function [epochs,contain_event,hist_target,hist_non_target,counter] ...
             epoch_start = i+baseline_size;
             epoch_end = i+baseline_size+w_size-1;
             epoch_data = data(epoch_start:epoch_end,:)-repmat(mean(base_line,1),w_size,1);
-            if (is_relevant(epoch_data,grad(epoch_start:epoch_end,:),eog(epoch_start:epoch_end)))
+            if (is_relevant(epoch_data,grad(epoch_start:epoch_end,:),eog(epoch_start:epoch_end),rel_thres))
                 [X] = get_feats(epoch_data,fs, 0, w_size_time);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms  fs = 200    
                 epoch.Q = (X * prin_comp)* classifier;
                 if all(rp_mask(epoch_start:epoch_end))   %If Epoch BEFORE RP, we mark it by 0 label, if epoch AFTER rp, we mark it by -1 label
@@ -163,9 +160,10 @@ end
 
 
 
-function [is_relevant] = is_relevant(baseline_corrected,grad,eog)
-    baselineBlow = sum(max(abs(baseline_corrected),[],1) > 70) > 3;
-    gradBlow = sum(mean(abs(grad),1) > 2) > 2;
-    eog_blow = max(abs(eog)) < 200;
+function [is_relevant] = is_relevant(baseline_corrected,grad,eog,rel_thres)
+    baselineBlow = sum(max(abs(baseline_corrected),[],1) > rel_thres.base_line.thres) ...
+        > rel_thres.base_line.num_channels;
+    gradBlow = sum(mean(abs(grad),1) > rel_thres.grad.thres) > rel_thres.grad.num_channels;
+    eog_blow = max(abs(eog)) < rel_thres.EOG_thres;
     is_relevant = ~(baselineBlow | gradBlow) | eog_blow ;
 end

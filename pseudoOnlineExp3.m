@@ -72,10 +72,9 @@ for i=1:size(ends,2)
        
 end
 [~,~,~,auc] = perfcurve([zeros(size(hist_clf_output_t)),ones(size(hist_clf_output_nt))],[hist_clf_output_t,hist_clf_output_nt],1);
-fileID = fopen([data_path, 'results/' 'AUCs.txt'],'a');
+
 pseudoFisher = (mean(hist_clf_output_t)-mean(hist_clf_output_nt))^2/(cov(hist_clf_output_t)+cov(hist_clf_output_nt));
-fprintf(fileID,'%s, AUC = %f, pFisher = %f \n\r',parameters_string,auc,pseudoFisher);
-fclose(fileID);
+
 histogram(hist_clf_output_t),hold on,histogram(hist_clf_output_nt);
 legend('Target','NonTarget')
 title(sprintf('auc=%f,pFisher=%f',auc,pseudoFisher));
@@ -90,6 +89,9 @@ tmp_intervals = intervals(~cellfun(@isempty, intervals));
 tmp_intervals_rp_mask = intervals_rp_mask(~isnan(intervals_rp_mask));
 [~,~,hist_F1_threshold] = statistics(save_path,parameters_string, tmp_intervals,tmp_intervals_rp_mask);
 sprintf('hist_f1 = %f\n',hist_F1_threshold)
+fileID = fopen([data_path, 'results/' 'AUCs.txt'],'a');
+fprintf(fileID,'%s, AUC = %f, pFisher = %f, Opt_thres=%f \n\r',parameters_string,auc,pseudoFisher,hist_F1_threshold);
+fclose(fileID);
 % visualise(tmp_intervals,tmp_intervals_rp_mask,'hist_clf_output')
 % [ auc ] = customAUC( intervals,intervals_rp_mask);
 end

@@ -50,7 +50,7 @@ for i=1:size(ends,2)
    rp_mask = zeros(size(mask(starts(i):ends(i))));
    if ~isempty(movement)
     target_start = max([1,movement - rp_len + 1]);
-    rp_indexes = [target_start:movement];
+    rp_indexes = [target_start:movement-0.5*fs]; %Our interval of interests ends 0.5s before movement.
     rp_mask(rp_indexes) = 1;
    end
    grad_interval = grad(starts(i):ends(i),:);
@@ -87,7 +87,9 @@ save([save_path 'clf_out_hist_data/'  parameters_string '_clf_out.mat'], ...
 
 tmp_intervals = intervals(~cellfun(@isempty, intervals));
 tmp_intervals_rp_mask = intervals_rp_mask(~isnan(intervals_rp_mask));
-[~,~,hist_F1_threshold] = statistics(save_path,parameters_string, tmp_intervals,tmp_intervals_rp_mask);
+[ACC_threshold,F1_threshold,hist_F1_threshold] = statistics(save_path,parameters_string, tmp_intervals,tmp_intervals_rp_mask);
+sprintf('ACC = %f\n',hist_F1_threshold)
+sprintf('F1 = %f\n',F1_threshold)
 sprintf('hist_f1 = %f\n',hist_F1_threshold)
 fileID = fopen([data_path, 'results/' 'AUCs.txt'],'a');
 fprintf(fileID,'%s, AUC = %f, pFisher = %f, Opt_thres=%f \n\r',parameters_string,auc,pseudoFisher,hist_F1_threshold);
@@ -127,13 +129,13 @@ function [epochs,contain_event,hist_target,hist_non_target,counter] ...
             if (is_relevant(epoch_data,grad(epoch_start:epoch_end,:),eog(epoch_start:epoch_end),rel_thres))
                 [X] = get_feats(epoch_data,fs, 0, w_size_time);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms  fs = 200    
                 epoch.Q = (X * prin_comp)* classifier;
-                if all(rp_mask(epoch_start:epoch_end))   %If Epoch BEFORE RP, we mark it by 0 label, if epoch AFTER rp, we mark it by -1 label
+                if (epoch_end >= rp_start) && (epoch_end<=rp_end)   %If Epoch BEFORE RP, we mark it by 0 label, if epoch AFTER rp, we mark it by -1 label
                     epoch.rp = 1;
                     hist_target=[hist_target,epoch.Q];
                     counter.one = counter.one + 1;
                 else
                     debug_flag=false;
-                    if rp_start > epoch_start
+                    if rp_start > epoch_end
                         debug_flag=true;
                         epoch.rp = 0;
                         hist_non_target=[hist_non_target,epoch.Q];
@@ -151,7 +153,7 @@ function [epochs,contain_event,hist_target,hist_non_target,counter] ...
                        disp('ERROR,no con') 
                     end
                 end
-                epoch.dt_before_mov = (epoch_end - rp_end)/fs;          
+                epoch.dt_before_mov = (epoch_end - rp_end)/fs-0.5; %because our rp region of interest ends 0.5s before movement          
                 epochs = [epochs,epoch];
                 counter.all=counter.all+1;
             end

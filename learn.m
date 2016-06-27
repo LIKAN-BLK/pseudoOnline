@@ -1,4 +1,4 @@
-function [prin_comp,classifier,opt_thr ] = learn( eegT, eegNT,w_size,w_size_time,fs)
+function [prin_comp,classifier,opt_thr ] = learn( eegT, eegNT,w_size_time,fs)
 %get_classifier_mat Returns classifier matrix
 
 %     tmp = reshape(cat(3,eegNT,eegT),size(eegNT,1),size(eegNT,2)*(size(eegNT,3)+size(eegT,3)));

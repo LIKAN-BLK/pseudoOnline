@@ -1,17 +1,19 @@
 function [] = pseudoOnlineExp3(data_path,w_size_time,target_start,target_end,ch_to_use,rel_thres)
 
+
+%%LEARNING CLASSIFIER
+fs = 200; %Hz
+baseline_time=200; %200ms
+[prin_comp,classifier] = learn_classifier(data_path,fs,baseline_time,w_size_time,target_start,target_end,ch_to_use,rel_thres);
+
+%%APPLYING
+CLASSIFIER
 parameters_string = sprintf('s_%de_%dw_%d',target_start,target_end,w_size_time);
 save_path = [data_path, 'results/'];
 mkdir(save_path);
 mkdir([save_path 'clf_out_hist_pics/']);
 mkdir([save_path 'clf_out_hist_data/']);
 mkdir([save_path 'TPR_FPRs/']);
-fs = 200; %Hz
-baseline_time=200; %200ms
-
-w_size = w_size_time * fs/1000;
-[eegTRP,eegNT] = cut_epochs_4learn([],fs,w_size_time,baseline_time,target_start,target_end,ch_to_use,rel_thres);
-[prin_comp,classifier, opt_thr] = learn(eegTRP,eegNT,w_size,w_size_time,fs);
 
 
 [data,EOG,mask] = loaddata(data_path,ch_to_use);
@@ -23,12 +25,6 @@ rp_len = 2000 * fs /1000;
 
 starts = find(mask == 12);
 ends = find(mask == 13);
-
-% threshold1= 0:-1:-5;
-% threshold2= 0:-1:-5;
-% hist1 = zeros(length(threshold1),2*round(ends(1) - starts(1))); %because rp could be at the beginning of interval and could be at the end of interval
-% hist2 = zeros(length(threshold2),2*round(ends(1) - starts(1)));
-% hist_mv_ind = round(size(hist1,2)/2);
 
 w_step = 10 * fs/1000; %10ms
 
@@ -171,3 +167,12 @@ function [is_relevant] = is_relevant(baseline_corrected,grad,eog,rel_thres)
     eog_blow = max(abs(eog)) < rel_thres.EOG_thres;
     is_relevant = ~(baselineBlow | gradBlow) | eog_blow ;
 end
+
+function [prin_comp,classifier] = learn_classifier(data_path,fs,baseline_time,w_size_time,target_start,target_end,ch_to_use,rel_thres)
+
+[eegTRP,eegNT] = cut_epochs_4learn(data_path,fs,w_size_time,...
+    baseline_time,target_start,target_end,ch_to_use,rel_thres);
+[prin_comp,classifier, opt_thr] = learn(eegTRP,eegNT,w_size_time,fs);
+end
+
+

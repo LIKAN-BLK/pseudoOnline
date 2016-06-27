@@ -4,8 +4,9 @@ function [] = run()
 data_path='../exp5/';
 d = dir([data_path,'results/']); %delete all content from results/ dir
 ifile = ~[d(:).isdir];
-delete([data_path,'results/' d(ifile).name]);
-
+if(~isempty([d(ifile).name]))
+    delete([data_path,'results/' d(ifile).name]);
+end
 
 isub = [d(:).isdir];
 nameFolds = {d(isub).name}';

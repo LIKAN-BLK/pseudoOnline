@@ -5,7 +5,8 @@ function [] = pseudoOnlineExp3(data_path,w_size_time,target_start,target_end,ch_
 fs = 200; %Hz
 baseline_time=200; %200ms
 [prin_comp,classifier] = learn_classifier(data_path,fs,baseline_time,w_size_time,target_start,target_end,ch_to_use,rel_thres);
-
+rp_start=-2;rp_end=-0.5;
+apply_classifier(data_path,fs,w_size_time,baseline_time,rp_start,rp_end,target_start,target_end,ch_to_use,prin_comp,classifier,rel_thres);
 
 end
 
@@ -17,7 +18,7 @@ function [prin_comp,classifier] = learn_classifier(data_path,fs,baseline_time,w_
 end
 
 
-function [] = apply_classifier(data_path,w_size_time,rp_start,rp_end,target_start,target_end,ch_to_use,rel_thres)
+function [] = apply_classifier(data_path,fs,w_size_time,baseline_time,rp_start,rp_end,target_start,target_end,ch_to_use,prin_comp,classifier,rel_thres)
 %%APPLYING CLASSIFIER
 
 parameters_string = sprintf('s_%de_%dw_%d',target_start,target_end,w_size_time);
@@ -126,7 +127,7 @@ function [epochs,contain_event,hist_target,hist_non_target,counter] ...
             if (is_relevant(epoch_data,grad(epoch_start:epoch_end,:),eog(epoch_start:epoch_end),rel_thres))
                 [X] = get_feats(epoch_data,fs, 0, w_size_time);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms  fs = 200    
                 epoch.Q = (X * prin_comp)* classifier;
-                if ~isempty(movement)
+                if exist('movement','var')
                     epoch.dt_before_mov = (epoch_end - movement)/fs; %because our rp region of interest ends 0.5s before movement
                 else
                     epoch.dt_before_mov=-6; %long before movement
@@ -134,7 +135,7 @@ function [epochs,contain_event,hist_target,hist_non_target,counter] ...
                 if (epoch_end >= rp_start) && (epoch_end<=rp_end)   %If Epoch BEFORE RP, we mark it by 0 label, if epoch AFTER rp, we mark it by -1 label
                     epoch.rp = 1;
                     hist_target=[hist_target,epoch.Q];
-                    counter.one = counter.one + 1;
+                    
                 else
                     debug_flag=false;
                     if rp_start > epoch_end

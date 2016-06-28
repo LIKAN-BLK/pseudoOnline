@@ -54,8 +54,8 @@ for i=1:size(ends,2)
    
    rp_mask = zeros(size(mask(starts(i):ends(i))));
    if ~isempty(movement)
-    rp_start = max([1,movement + rp_start*fs + 1]);
-    rp_indexes = [rp_start:movement+rp_end*fs]; %Our interval of interests ends 0.5s before movement.
+    target_start = max([1,movement + rp_start*fs + 1]);
+    rp_indexes = [target_start:movement+rp_end*fs]; %Our interval of interests ends 0.5s before movement.
     rp_mask(rp_indexes) = 1;
     rp_mask(movement)=10;
    end

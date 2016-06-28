@@ -71,11 +71,11 @@ for  thres= thresholds
 end
 
 
-[~,ACC_index]=min(ACC);
+[~,ACC_index]=max(ACC);
 ACC_threshold = thresholds(ACC_index);
-[~,F1_index]=min(F1);
+[~,F1_index]=max(F1);
 F1_threshold = thresholds(F1_index);
-[~,hist_F1_index]=min(hist_F1);
+[~,hist_F1_index]=max(hist_F1);
 hist_F1_threshold = thresholds(hist_F1_index);
 end
 

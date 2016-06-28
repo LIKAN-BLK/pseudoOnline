@@ -64,7 +64,7 @@ for i=1:size(ends,2)
    
        
        
-   [intervals{i},intervals_rp_mask(i),tmp_hist_clf_output_t,tmp_hist_clf_output_nt] = ...
+   [intervals{i},intervals_rp_mask{i},tmp_hist_clf_output_t,tmp_hist_clf_output_nt] = ...
        process_interval(interval,rp_mask,grad_interval,EOG_interval,w_size_time,baseline_time,fs,w_step,prin_comp,classifier,rel_thres);
     
     hist_clf_output_t = [hist_clf_output_t,tmp_hist_clf_output_t];
@@ -109,15 +109,17 @@ function [epochs,contain_event,hist_target,hist_non_target,counter] ...
     epochs=[];
     rp = find(rp_mask == 1);
     if isempty(rp)
+        contain_event = 0;
         rp_start = size(data,1)+1;
         rp_end = rp_start; % for epochs without RP, for correct calc of dt_before_mov
     else
+        contain_event = 1;
         rp_start = rp(1);
         rp_end = rp(end);
         movement = find(rp_mask==10);
     end
     
-    contain_event = (sum(rp_mask)>0);
+    
     if (sum(rp_mask)>=0)        %sum(rp_mask)>=0 - for all intervals, sum(rp_mask)>0 - for intervals with RP
         for i = 1:w_step:length(data) - w_size - baseline_size + 1
             base_line = data(i:i+baseline_size-1,:);

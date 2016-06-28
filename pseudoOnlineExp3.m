@@ -6,8 +6,7 @@ fs = 200; %Hz
 baseline_time=200; %200ms
 [prin_comp,classifier] = learn_classifier(data_path,fs,baseline_time,w_size_time,target_start,target_end,ch_to_use,rel_thres);
 
-%%APPLYING
-CLASSIFIER
+%%APPLYING CLASSIFIER
 parameters_string = sprintf('s_%de_%dw_%d',target_start,target_end,w_size_time);
 save_path = [data_path, 'results/'];
 mkdir(save_path);

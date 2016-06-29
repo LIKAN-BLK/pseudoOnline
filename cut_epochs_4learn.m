@@ -16,7 +16,7 @@ for i =1:size(tends,2)
         baseline_time,start_rp_time,end_rp_time,rel_thres);
   
     if ~isempty(tmp_rp1_epochs)
-        rp1_epochs = cat(3,rp1_epochs,tmp_rp1_epochs);
+        rp1_epochs = [rp1_epochs,tmp_rp1_epochs];
     end
 end
 
@@ -48,35 +48,40 @@ function [rp1_epochs] = proc_target_interval(interval_data,grad,epoch_mask,eog,w
     bline_width = baseline_time*fs/1000;
     rp1_epochs = [];
     rp_length = 2;%RP length - 2seconds
-    if((find(epoch_mask == 10,1) > (rp_length*fs))) % 12+13+10, so interval contain movement,
-        %And this movement 3s after beginning of the interval
-        %We have only one rp2 epoch in whole interval
+    w_step = 50 * fs/1000; %10ms
+    if((find(epoch_mask == 10,1) > (rp_length*fs)))
+        
         movement = find(epoch_mask==10);      
         start_rp1_data = movement + start_rp_time * fs /1000;
         end_rp1_data = movement + end_rp_time * fs /1000;
-        rp1_epochs = cat(3,rp1_epochs,make_epochs(interval_data(start_rp1_data-bline_width+1:end_rp1_data,:), ... %additional window for baseline
-            grad(start_rp1_data-bline_width+1:end_rp1_data,:),eog(start_rp1_data-bline_width+1:end_rp1_data),w_size,bline_width,rel_thres));
+        tmp_rp1_epochs = make_epochs(interval_data(start_rp1_data-bline_width+1:end_rp1_data,:), ... %additional window for baseline
+            grad(start_rp1_data-bline_width+1:end_rp1_data,:),eog(start_rp1_data-bline_width+1:end_rp1_data),w_size,w_step,bline_width,rel_thres);
+        tmp_rp1_epochs = arrayfun(@(x) setfield(x,'dt_before_movement',x.dt_before_movement/fs + end_rp_time/1000),tmp_rp1_epochs);
+        rp1_epochs = [rp1_epochs,tmp_rp1_epochs];
     end     
 end
 
 function [nt_epochs] = proc_non_target_interval(interval_data,grad,eog,w_size,fs,baseline_time,rel_thres)
-    
+    w_step = 100 * fs/1000;
     bline_width = baseline_time*fs/1000;
     start_rel_data = 30*fs; %We will use data 30s from 14 label
     end_rel_data = size(interval_data,1) - (2000 *fs/1000);  %We will use data 2s before movement
     nt_epochs =  make_epochs(interval_data(start_rel_data:end_rel_data,:), ...
-        grad(start_rel_data:end_rel_data,:),eog(start_rel_data:end_rel_data),w_size,bline_width,rel_thres);
+        grad(start_rel_data:end_rel_data,:),eog(start_rel_data:end_rel_data),w_size,w_step,bline_width,rel_thres);
+    nt_epochs = nt_epochs.data;
 end
 
 
-function [epochs] = make_epochs(data,grad,eog,w_size,bline_width,rel_thres) 
+function [epochs] = make_epochs(data,grad,eog,w_size,w_step,bline_width,rel_thres) 
     epochs= [];
-    for i = size(data,1):-w_size:(bline_width+w_size) %last window for baseline
+    
+    for i = size(data,1):-w_step:(bline_width+w_size) %last window for baseline
         tmp_epoch = data(i-w_size+1:i,:);
         baseline = mean(data(i-(bline_width+w_size) + 1:i-w_size,:),1);
-        bcorrected_epoch = tmp_epoch - repmat(baseline,size(tmp_epoch,1),1);
+        bcorrected_epoch.data = tmp_epoch - repmat(baseline,size(tmp_epoch,1),1);
+        bcorrected_epoch.dt_before_movement = i-size(data,1);                       %range between epoch end and data end. Needed for target intervals to calc time before movement
         if ~isempty(tmp_epoch)
-            if is_relevant(bcorrected_epoch,eog(i-(bline_width+w_size) + 1:i),grad(i-(bline_width+w_size) + 1:i,:),rel_thres)
+            if is_relevant(bcorrected_epoch.data,eog(i-(bline_width+w_size) + 1:i),grad(i-(bline_width+w_size) + 1:i,:),rel_thres)
                 epochs = cat(3,epochs,bcorrected_epoch); 
             end
         end

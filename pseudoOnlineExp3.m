@@ -14,7 +14,9 @@ function [prin_comp,classifier] = learn_classifier(data_path,fs,baseline_time,w_
 
 [eegTRP,eegNT] = cut_epochs_4learn(data_path,fs,w_size_time,...
     baseline_time,target_start,target_end,ch_to_use,rel_thres);
-[prin_comp,classifier, opt_thr] = learn(eegTRP,eegNT,w_size_time,fs);
+t_number=min([size(eegTRP,3),500]);
+nt_number=min([size(eegNT,3),500]);
+[prin_comp,classifier, opt_thr] = learn(eegTRP(:,:,1:t_number),eegNT(:,:,1:nt_number),w_size_time,fs);
 end
 
 
@@ -41,7 +43,6 @@ ends = find(mask == 13);
 
 w_step = 10 * fs/1000; %10ms
 
-intervals_rp_mask = nan(1,length(ends));
 hist_clf_output_t=[];
 hist_clf_output_nt=[];
 
@@ -64,7 +65,7 @@ for i=1:size(ends,2)
    
        
        
-   [intervals{i},intervals_rp_mask{i},tmp_hist_clf_output_t,tmp_hist_clf_output_nt] = ...
+   [intervals{i},intervals_rp_mask(i),tmp_hist_clf_output_t,tmp_hist_clf_output_nt] = ...
        process_interval(interval,rp_mask,grad_interval,EOG_interval,w_size_time,baseline_time,fs,w_step,prin_comp,classifier,rel_thres);
     
     hist_clf_output_t = [hist_clf_output_t,tmp_hist_clf_output_t];
@@ -72,9 +73,8 @@ for i=1:size(ends,2)
        
 end
 [~,~,~,auc] = perfcurve([zeros(size(hist_clf_output_t)),ones(size(hist_clf_output_nt))],[hist_clf_output_t,hist_clf_output_nt],1);
-
 pseudoFisher = (mean(hist_clf_output_t)-mean(hist_clf_output_nt))^2/(cov(hist_clf_output_t)+cov(hist_clf_output_nt));
-
+disp(sprintf('auc=%f,pFisher=%f',auc,pseudoFisher));
 histogram(hist_clf_output_t),hold on,histogram(hist_clf_output_nt);
 legend('Target','NonTarget')
 title(sprintf('auc=%f,pFisher=%f',auc,pseudoFisher));
@@ -86,7 +86,7 @@ save([save_path 'clf_out_hist_data/'  parameters_string '_clf_out.mat'], ...
 
 
 tmp_intervals = intervals(~cellfun(@isempty, intervals));
-tmp_intervals_rp_mask = intervals_rp_mask(~isnan(intervals_rp_mask));
+tmp_intervals_rp_mask = intervals_rp_mask(~cellfun(@isempty, intervals));
 [ACC_threshold,F1_threshold,hist_F1_threshold] = statistics(save_path,parameters_string, tmp_intervals,tmp_intervals_rp_mask);
 sprintf('ACC = %f\n',hist_F1_threshold)
 sprintf('F1 = %f\n',F1_threshold)
@@ -126,7 +126,8 @@ function [epochs,contain_event,hist_target,hist_non_target,counter] ...
             epoch_start = i+baseline_size;
             epoch_end = i+baseline_size+w_size-1;
             epoch_data = data(epoch_start:epoch_end,:)-repmat(mean(base_line,1),w_size,1);
-            if (is_relevant(epoch_data,grad(epoch_start:epoch_end,:),eog(epoch_start:epoch_end),rel_thres))
+            tmp_eog = eog(epoch_start:epoch_end) - mean(eog(i:i+baseline_size-1),1);
+            if (is_relevant(epoch_data,grad(epoch_start:epoch_end,:),tmp_eog,rel_thres))
                 [X] = get_feats(epoch_data,fs, 0, w_size_time);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms  fs = 200    
                 epoch.Q = (X * prin_comp)* classifier;
                 if exist('movement','var')
@@ -171,7 +172,7 @@ function [is_relevant] = is_relevant(baseline_corrected,grad,eog,rel_thres)
         > rel_thres.base_line.num_channels;
     gradBlow = sum(mean(abs(grad),1) > rel_thres.grad.thres) > rel_thres.grad.num_channels;
     eog_blow = max(abs(eog)) < rel_thres.EOG_thres;
-    is_relevant = ~(baselineBlow | gradBlow) | eog_blow ;
+    is_relevant = ~(baselineBlow | gradBlow) & eog_blow ;
 end
 
 

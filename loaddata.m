@@ -1,8 +1,5 @@
 function [EEG,EOG,mask] = loaddata(data_path,ch_to_use)
 %load_data Get data, eog and mask from files.
-if isempty(data_path)
-    data_path = '../exp5/';
-end
 mask = load([data_path 'maska.mat']);
 mask = mask.maska;
 

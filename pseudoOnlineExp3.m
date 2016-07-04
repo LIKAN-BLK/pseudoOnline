@@ -1,23 +1,48 @@
 function [] = pseudoOnlineExp3(data_path,w_size_time,target_start,target_end,ch_to_use,rel_thres)
-
+% data_path - path to experiment data
+% w_size_time - window for classification in ms
+% target_start - beginning of interval, where we collect TARGET epochs
+% target_end - ending of interval, where we collect TARGET epochs
+% ch_to_use - struct, wich contain two fields 'EEGch' and 'EOGch', each
+% contain list with numbers of EEG and EOG 
+% rel_thres - struct wich contains thresholds for throwing out irrel epochs, wich contain fields 'base_line', 'grad', 'EOG_thres'.
+% 'base_line' and 'grad' - structs with fields 'num_channels' and 'thres'.
+% if 'thres' exceeded in channels larger than 'num_channels' we consider
+% that epoch irrelevant. 'EOG_thres' - obvious.
 
 %%LEARNING CLASSIFIER
 fs = 200; %Hz
-baseline_time=200; %200ms
-[prin_comp,classifier] = learn_classifier(data_path,fs,baseline_time,w_size_time,target_start,target_end,ch_to_use,rel_thres);
-rp_start=-2;rp_end=-0.5;
+baseline_time=200; %200ms length of time interval for baseline
+rp_start=-2;rp_end=-0.5; %interval, in wich we consider interval as rp
+[prin_comp,classifier] = learn_classifier(data_path,fs,baseline_time,w_size_time,rp_start,rp_end ...
+    ,target_start,target_end,ch_to_use,rel_thres);
 apply_classifier(data_path,fs,w_size_time,baseline_time,rp_start,rp_end,target_start,target_end,ch_to_use,prin_comp,classifier,rel_thres);
 
 end
 
-function [prin_comp,classifier,thres] = learn_classifier(data_path,fs,baseline_time,w_size_time,target_start,target_end,ch_to_use,rel_thres)
+function [prin_comp,classifier,thres] = learn_classifier(data_path,fs,baseline_time,w_size_time,rp_start,rp_end,target_start,target_end,ch_to_use,rel_thres)
+% data_path - path to experiment data
+
+% w_size_time - window for classification in ms
+% rp_start - beginning of interval, in wich we consider interval as rp
+% rp_end - ending of interval, interval, in wich we consider interval as rp
+% target_start - beginning of interval, where we collect TARGET epochs, it
+% differs from rp interval, because not all rp equally usefull
+% target_end - ending of interval, where we collect TARGET epochs
+% ch_to_use - struct, wich contain two fields 'EEGch' and 'EOGch', each
+% contain list with numbers of EEG and EOG 
+% rel_thres - struct wich contains thresholds for throwing out irrel epochs, wich contain fields 'base_line', 'grad', 'EOG_thres'.
+% 'base_line' and 'grad' - structs with fields 'num_channels' and 'thres'.
+% if 'thres' exceeded in channels larger than 'num_channels' we consider
+% that epoch irrelevant. 'EOG_thres' - obvious.
+
 
 [eegTRP,eegNT,intervals] = cut_epochs_4learn(data_path,fs,w_size_time,...
     baseline_time,target_start,target_end,ch_to_use,rel_thres);
 t_number=min([size(eegTRP,3),2000]);
 nt_number=min([size(eegNT,3),2000]);
 [prin_comp,classifier, ~] = learn(eegTRP(:,:,1:t_number),eegNT(:,:,1:nt_number));
-[thres] = calc_threshold_learning(intervals,prin_comp,classifier);
+[thres] = calc_threshold_learning(intervals,prin_comp,classifier,rp_start,rp_end);
 % disp(sprintf('LEARNIGN: hist_f1_thres = %f\n\r',thres));
 end
 

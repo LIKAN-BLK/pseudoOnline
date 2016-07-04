@@ -61,13 +61,13 @@ function [intervals,target_epochs] = proc_target_interval(interval_data,grad,epo
         start_rp1_data = movement + start_rp_time * fs /1000;
         end_rp1_data = movement + end_rp_time * fs /1000;
         correct_dt = @(x) setfield(x,'dt_before_mov',x.dt_before_mov/fs + end_rp_time/1000);
-        set_rp_true = @(x) setfield(correct_dt(x),'rp',1);
+        
         target_epochs = make_epochs(interval_data(start_rp1_data-bline_width+1:end_rp1_data,:), ... %additional window for baseline
             grad(start_rp1_data-bline_width+1:end_rp1_data,:),...
-            eog(start_rp1_data-bline_width+1:end_rp1_data),w_size,w_step,bline_width,rel_thres,set_rp_true);
-        set_rp_false = @(x) setfield(correct_dt(x),'rp',0);
+            eog(start_rp1_data-bline_width+1:end_rp1_data),w_size,w_step,bline_width,rel_thres,correct_dt);
+        
         tmp_non_rp_epochs = make_epochs(interval_data(1:start_rp1_data-bline_width,:), ... %additional window for baseline
-            grad(1:start_rp1_data-bline_width,:),eog(1:start_rp1_data-bline_width),w_size,w_step,bline_width,rel_thres,set_rp_false);
+            grad(1:start_rp1_data-bline_width,:),eog(1:start_rp1_data-bline_width),w_size,w_step,bline_width,rel_thres,correct_dt);
         
         intervals = [tmp_non_rp_epochs,target_epochs];
     end

@@ -10,14 +10,15 @@ apply_classifier(data_path,fs,w_size_time,baseline_time,rp_start,rp_end,target_s
 
 end
 
-function [prin_comp,classifier] = learn_classifier(data_path,fs,baseline_time,w_size_time,target_start,target_end,ch_to_use,rel_thres)
+function [prin_comp,classifier,thres] = learn_classifier(data_path,fs,baseline_time,w_size_time,target_start,target_end,ch_to_use,rel_thres)
 
 [eegTRP,eegNT,intervals] = cut_epochs_4learn(data_path,fs,w_size_time,...
     baseline_time,target_start,target_end,ch_to_use,rel_thres);
-t_number=min([size(eegTRP,3),500]);
-nt_number=min([size(eegNT,3),500]);
-[prin_comp,classifier, opt_thr] = learn(eegTRP(:,:,1:t_number),eegNT(:,:,1:nt_number));
-
+t_number=min([size(eegTRP,3),2000]);
+nt_number=min([size(eegNT,3),2000]);
+[prin_comp,classifier, ~] = learn(eegTRP(:,:,1:t_number),eegNT(:,:,1:nt_number));
+[thres] = calc_threshold_learning(intervals,prin_comp,classifier);
+% disp(sprintf('LEARNIGN: hist_f1_thres = %f\n\r',thres));
 end
 
 
@@ -89,8 +90,8 @@ save([save_path 'clf_out_hist_data/'  parameters_string '_clf_out.mat'], ...
 tmp_intervals = intervals(~cellfun(@isempty, intervals));
 tmp_intervals_rp_mask = intervals_rp_mask(~cellfun(@isempty, intervals));
 [ACC_threshold,F1_threshold,hist_F1_threshold] = statistics(save_path,parameters_string, tmp_intervals,tmp_intervals_rp_mask);
-sprintf('ACC = %f\n',hist_F1_threshold)
-sprintf('F1 = %f\n',F1_threshold)
+% sprintf('ACC = %f\n',ACC_threshold)
+% sprintf('F1 = %f\n',F1_threshold)
 sprintf('hist_f1 = %f\n',hist_F1_threshold)
 fileID = fopen([data_path, 'results/' 'AUCs.txt'],'a');
 fprintf(fileID,'%s, AUC = %f, pFisher = %f, Opt_thres=%f \n\r',parameters_string,auc,pseudoFisher,hist_F1_threshold);

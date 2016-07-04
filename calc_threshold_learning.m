@@ -1,4 +1,4 @@
-function [hist_F1_threshold] = calc_threshold(intervals,intervals_with_rp)
+function [hist_F1_threshold] = calc_threshold_learning(intervals,prin_comp,classifier)
 %CALC_THRESHOLD Summary of this function goes here
 %   Detailed explanation goes here
 thresholds=-10:0.5:10;
@@ -9,17 +9,15 @@ for  thres= thresholds
         interval = intervals{i};
         classifer_triggered = false;
         for epoch = interval
-            if(epoch.Q < thres)
+            Q = (epoch.feats*prin_comp)*classifier;
+            if(Q < thres)
                 tmp_hist = [tmp_hist,epoch.dt_before_mov];
                 classifer_triggered = true;
                 break;
             end
-        end
-        
+        end 
         if(~classifer_triggered)
-            if(intervals_with_rp(i) == 1)
-                tmp_hist = [tmp_hist,5]; % FN considered as VERY late classifier triggering
-            end
+            tmp_hist = [tmp_hist,5]; % FN considered as VERY late classifier triggering
         end    
     end
     if ~isempty(tmp_hist)

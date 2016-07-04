@@ -60,7 +60,7 @@ function [intervals,target_epochs] = proc_target_interval(interval_data,grad,epo
         movement = find(epoch_mask==10);      
         start_rp1_data = movement + start_rp_time * fs /1000;
         end_rp1_data = movement + end_rp_time * fs /1000;
-        correct_dt = @(x) setfield(x,'dt_before_movement',x.dt_before_movement/fs + end_rp_time/1000);
+        correct_dt = @(x) setfield(x,'dt_before_mov',x.dt_before_mov/fs + end_rp_time/1000);
         set_rp_true = @(x) setfield(correct_dt(x),'rp',1);
         target_epochs = make_epochs(interval_data(start_rp1_data-bline_width+1:end_rp1_data,:), ... %additional window for baseline
             grad(start_rp1_data-bline_width+1:end_rp1_data,:),...
@@ -92,7 +92,7 @@ function [epochs] = make_epochs(data,grad,eog,w_size,w_step,bline_width,rel_thre
         tmp_epoch = data(i-w_size+1:i,:);
         baseline = mean(data(i-(bline_width+w_size) + 1:i-w_size,:),1);
         bcorrected_epoch = tmp_epoch - repmat(baseline,size(tmp_epoch,1),1);
-        res.dt_before_movement = i-size(data,1);                       %range between epoch end and data end. Needed for target intervals to calc time before movement
+        res.dt_before_mov = i-size(data,1);                       %range between epoch end and data end. Needed for target intervals to calc time before movement
         tmp_eog = eog(i-w_size+1:i) - mean(eog(i-(bline_width+w_size) + 1:i-w_size),1);
         
         if is_relevant(bcorrected_epoch,grad(i-(bline_width+w_size) + 1:i,:),tmp_eog,rel_thres)

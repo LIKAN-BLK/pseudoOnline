@@ -12,11 +12,12 @@ end
 
 function [prin_comp,classifier] = learn_classifier(data_path,fs,baseline_time,w_size_time,target_start,target_end,ch_to_use,rel_thres)
 
-[eegTRP,eegNT] = cut_epochs_4learn(data_path,fs,w_size_time,...
+[eegTRP,eegNT,intervals] = cut_epochs_4learn(data_path,fs,w_size_time,...
     baseline_time,target_start,target_end,ch_to_use,rel_thres);
 t_number=min([size(eegTRP,3),500]);
 nt_number=min([size(eegNT,3),500]);
-[prin_comp,classifier, opt_thr] = learn(eegTRP(:,:,1:t_number),eegNT(:,:,1:nt_number),w_size_time,fs);
+[prin_comp,classifier, opt_thr] = learn(eegTRP(:,:,1:t_number),eegNT(:,:,1:nt_number));
+
 end
 
 
@@ -128,7 +129,7 @@ function [epochs,contain_event,hist_target,hist_non_target,counter] ...
             epoch_data = data(epoch_start:epoch_end,:)-repmat(mean(base_line,1),w_size,1);
             tmp_eog = eog(epoch_start:epoch_end) - mean(eog(i:i+baseline_size-1),1);
             if (is_relevant(epoch_data,grad(epoch_start:epoch_end,:),tmp_eog,rel_thres))
-                [X] = get_feats(epoch_data,fs, 0, w_size_time);  %arguments is (data,fs,learn_start,learn_end) learn_start,learn_end - start and end of the interval for learning in ms  fs = 200    
+                [X] = get_feats(epoch_data);
                 epoch.Q = (X * prin_comp)* classifier;
                 if exist('movement','var')
                     epoch.dt_before_mov = (epoch_end - movement)/fs; %because our rp region of interest ends 0.5s before movement
